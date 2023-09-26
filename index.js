@@ -15,6 +15,10 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 const { OK } = require("./src/constants/statusCode.constant.js");
 
 const database = require('./src/configs/databaseConnection')
+
+const route = require('./src/routes')
+
+route(app);
 database.connect();
 
 const port = process.env.PORT || 3000;
@@ -34,16 +38,14 @@ var cpUpload = upload.fields([
   { name: "cover_image[]", maxCount: 1 },
 ]);
 app.use(cpUpload);
+
 app.all("/", (req, res) => {
-  res.status(200).json({
-    code: 1000,
-    message: OK,
-  });
+  res.send("Mạng xã hội CÓ TÍNH PHÍ !!!!!!!!!");
 });
 
 app.all("/test", (req, res)=>{
   console.log("Before return")
-  res.status(200).json("Tra ve cho user");
+  res.status(200).json("Test api");
   console.log("After return")
 })
 chats = [];
