@@ -9,6 +9,8 @@ const jwtHelper = require("../helpers/jwt.helper.js");
 const statusCode = require("./../constants/statusCode.constant.js");
 const statusMessage = require("./../constants/statusMessage.constant.js");
 const commonConstant = require("../constants/common.constant.js");
+const { emailValidate } = require("../helpers/emailSender.helper.js");
+const { generateRandom6DigitNumber } = require("../helpers/random.helper.js");
 
 // const tokenList = {};
 
@@ -42,7 +44,9 @@ function validationPhonenumber(phonenumber) {
   }
 }
 function validationPasword(password, email) {
+    console.log(email);
     const emailAddress = email.split('@');
+    console.log(emailAddress)
     if (
     !password ||
     password.length < 6 ||
@@ -63,10 +67,9 @@ const signup = async (req, res) => {
   const { password, uuid, email } = req.query;
   // phonenumber không tồn tại, độ dài khác 10, không có số không đầu tiên,
   // chứa kí tự không phải số
-  console.log("test validate emial", validationEmail(email))
   if(email && password && uuid){
     try {
-      if (validationEmail(email) || validationPasword(password, email) || !uuid) {
+      if (!validationEmail(email) || validationPasword(password, email) || !uuid) {
         throw Error("PARAMETER_VALUE_IS_INVALID");
       } else {
         const userData = await User.findOne({ email: email });
@@ -130,7 +133,7 @@ const login = async (req, res) => {
   const { email, password } = req.query;// gửi bằng query params
   if(email && password){
     try {
-      if (validationEmail(email) || validationPasword(password)) {
+      if (!validationEmail(email) || validationPasword(password, email)) {
         throw Error("PARAMETER_VALUE_IS_INVALID");
       } else {
         const userData = await User.findOne({ email: email });
@@ -181,7 +184,7 @@ const login = async (req, res) => {
           }
         } else {
           // phonenumber chưa được đăng kí
-          console.log("phonenumber chưa được đăng kí")
+          console.log("email chưa được đăng kí")
           res.status(200).json({
             code: statusCode.USER_IS_NOT_VALIDATED,
             message: statusMessage.USER_IS_NOT_VALIDATED,
@@ -213,18 +216,15 @@ const login = async (req, res) => {
 
 
 const getVerifyCode = async (req, res) => {
-  const { phonenumber } = req.query;
-  if(!phonenumber){
+  const { email } = req.query;
+  if(!email){
     return res.status(200).json({
       code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
       message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
     });
   }
   if (
-    !phonenumber ||
-    phonenumber.length != 10 ||
-    phonenumber[0] != "0" ||
-    phonenumber.match(/[^0-9]/g)
+    !email || !validationEmail(email)
   ) {
     return res.status(200).json({
       code: statusCode.PARAMETER_VALUE_IS_INVALID,
@@ -234,8 +234,12 @@ const getVerifyCode = async (req, res) => {
     //neu duoi 120s khi da gui request nay thi bao loi 1010 1009
     
     //Nguoi dung truyền tham số với số điện thoại chưa được đăng ký.
-    const userData = await User.findOne({ phonenumber: phonenumber });
+    const userData = await User.findOne({ email: email });
     if(userData){
+      const verifyCode = generateRandom6DigitNumber();
+      userData.verifyCode = verifyCode;
+      await userData.save();
+      emailValidate(email, verifyCode);
       return res.status(200).json({
         code: statusCode.OK,
         message: statusMessage.OK,
@@ -251,19 +255,16 @@ const getVerifyCode = async (req, res) => {
 };
 
 const checkVerifyCode = async (req, res) => {
-  const { phonenumber, code_verify } = req.query;
+  const { email, code_verify } = req.query;
 
-  if(!phonenumber || !code_verify){
+  if(!email || !code_verify){
     return res.status(200).json({
       code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
       message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
     });
   }
   if (
-    !phonenumber ||
-    phonenumber.length != 10 ||
-    phonenumber[0] != "0" ||
-    phonenumber.match(/[^0-9]/g)
+    !email || !validationEmail(email)
   ) {
     return res.status(200).json({
       code: statusCode.PARAMETER_VALUE_IS_INVALID,
@@ -271,29 +272,39 @@ const checkVerifyCode = async (req, res) => {
     });
   } else {
     //neu duoi 120s khi da gui request nay thi bao loi 1010 1009
-    const userData = await User.findOne({ phonenumber: phonenumber });
+    const userData = await User.findOne({ email: email });
     if (userData) {
-      const accessToken = await jwtHelper.generateToken(
-        {_id: userData._id, phonenumber: userData.phonenumber},
-        accessTokenSecret,
-        accessTokenLife
-      );
-      // lưu token tương ứng vs user, nếu đã tốn tại token thì thay thế token
-      await User.findOneAndUpdate(
-        { _id: userData._id },
-        {
-          $set: {
-            token: accessToken,
-          },
-        });
+      const verifyCode = userData.verifyCode;
+      if (verifyCode && verifyCode == code_verify){
+        const accessToken = await jwtHelper.generateToken(
+          {_id: userData._id, email: userData.email},
+          accessTokenSecret,
+          accessTokenLife
+        );
+        // lưu token tương ứng vs user, nếu đã tốn tại token thì thay thế token
+        await User.findOneAndUpdate(
+          { _id: userData._id },
+          {
+            $set: {
+              active: 1,
+              token: accessToken,
+            },
+          });
+          return res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: {
+              token: accessToken,
+              id: userData._id,
+              active: userData.active,
+            },
+          });
+      } else {
         return res.status(200).json({
-          code: statusCode.OK,
-          message: statusMessage.OK,
-          data: {
-            token: accessToken,
-            id: userData._id,
-          },
-        });
+          code: statusCode.PARAMETER_VALUE_IS_INVALID,
+          message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+        })
+      }
       }else{
         return res.status(200).json({
           code: statusCode.USER_IS_NOT_VALIDATED,
@@ -303,8 +314,6 @@ const checkVerifyCode = async (req, res) => {
     
   }
 };
-
-
 
 module.exports = {
   login,

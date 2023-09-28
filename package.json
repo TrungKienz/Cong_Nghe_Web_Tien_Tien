@@ -30,6 +30,7 @@
     "video-thumbnail-generator": "^1.0.8"
   },
   "devDependencies": {
+    "nodemailer": "^6.9.5",
     "nodemon": "^2.0.6"
   }
 }
