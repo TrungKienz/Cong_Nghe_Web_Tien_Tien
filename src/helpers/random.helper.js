@@ -6,7 +6,7 @@ function generateRandom6DigitNumber() {
     // Convert the random number to a 6-digit string
     const random6DigitNumber = randomNumber.toString().padStart(6, '0');
     
-    return random6DigitNumber;
+    return random6DigitNumber.toString;
   }
   
 module.exports = { generateRandom6DigitNumber };
