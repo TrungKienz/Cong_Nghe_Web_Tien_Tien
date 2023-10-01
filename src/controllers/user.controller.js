@@ -6,6 +6,7 @@ const statusCode = require("./../constants/statusCode.constant.js");
 const statusMessage = require("./../constants/statusMessage.constant.js");
 
 const logout = async (req, res) => {
+  console.log(req.userDataPass)
   const { token } = req.query;
   const { _id } = req.userDataPass;
   try {

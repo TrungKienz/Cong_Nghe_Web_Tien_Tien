@@ -236,6 +236,12 @@ const getVerifyCode = async (req, res) => {
     //Nguoi dung truyền tham số với số điện thoại chưa được đăng ký.
     const userData = await User.findOne({ email: email });
     if(userData){
+      if (userData.active == 1){
+        return res.status(200).json({
+          code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+          message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+        })
+      }
       const verifyCode = generateRandom6DigitNumber();
       userData.verifyCode = verifyCode;
       await userData.save();
@@ -243,6 +249,9 @@ const getVerifyCode = async (req, res) => {
       return res.status(200).json({
         code: statusCode.OK,
         message: statusMessage.OK,
+        data: {
+          code_verify: userData.verifyCode,
+        }
       });
     }else{
       return res.status(200).json({
