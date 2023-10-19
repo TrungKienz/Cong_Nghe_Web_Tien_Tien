@@ -28,20 +28,13 @@ const logout = async (req, res) => {
 }
 
 const changeInfoAfterSignup = async (req, res) => {
-  const { _id, phonenumber } = req.userDataPass;
+  const { _id, email } = req.userDataPass;
   const { username } = req.body;
-  // username để trống, chứa các kí tự đặc biệt, trùng với số điện thoại, 
-  // nhỏ hơn 6 tí tự hoặc lớn hơn 50 kí tự
-  // là đường dẫn, số điện thoại, địa chỉ
+  // username
   const avatar = req.files['avatar'];
   const timeCurrent = Date.now();
   try {
-    if (!username ||
-      username.match(/[^a-z|A-Z|0-9]/g) ||
-      username === phonenumber ||
-      username.lenth < 6 ||
-      username.lenth > 50
-    ) {
+    if (!username) {
       throw Error("PARAMETER_VALUE_IS_INVALID")
     }
     else {

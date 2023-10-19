@@ -6,20 +6,21 @@ const statusMessage = require("../constants/statusMessage.constant.js");
 const accessTokenSecret =
   process.env.ACCESS_TOKEN_SECRET || "accessTokenSecret";
 
-let isAuth = async (req, res, next) => {
+const isAuth = async (req, res, next) => {
   const tokenFromClient =
     req.body.token || req.query.token || req.headers["x-access-token"];
-
+  console.log("Token", tokenFromClient)
   if (tokenFromClient) {
     try {
+      console.log("here")
       // if(tokenFromClient)
       const decoded = await jwtHelper.verifyToken(
         tokenFromClient,
         accessTokenSecret
       );
+      console.log("decoded", decoded);
       const result = await User.findOne({
         _id: decoded.data._id,
-        phonenumber: decoded.data.phonenumber,
         token: tokenFromClient,
       })
       if (!result) {
@@ -31,13 +32,12 @@ let isAuth = async (req, res, next) => {
           message: statusMessage.USER_IS_NOT_VALIDATED,
         })
       }
-      // console.log(decoded)
       req.jwtDecoded = decoded;
       req.userDataPass = result;
 
       next();
     } catch (error) {
-      console.log(error.message)
+      console.log("error",error.message)
       return res.status(401).json({
         code: statusCode.PARAMETER_VALUE_IS_INVALID,
         message: statusMessage.PARAMETER_VALUE_IS_INVALID,
