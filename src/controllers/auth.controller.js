@@ -144,7 +144,7 @@ const login = async (req, res) => {
             // kiểm tra password
             // tạo token
             const accessToken = await jwtHelper.generateToken(
-                {_id: userData._id, phonenumber: userData.phonenumber},
+                {_id: userData._id, email: userData.email},
                 accessTokenSecret,
                 accessTokenLife
             );

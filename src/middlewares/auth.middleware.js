@@ -9,7 +9,7 @@ const accessTokenSecret =
 const isAuth = async (req, res, next) => {
   const tokenFromClient =
     req.body.token || req.query.token || req.headers["x-access-token"];
-  console.log(tokenFromClient)
+  console.log("Token", tokenFromClient)
   if (tokenFromClient) {
     try {
       console.log("here")
@@ -21,7 +21,6 @@ const isAuth = async (req, res, next) => {
       console.log("decoded", decoded);
       const result = await User.findOne({
         _id: decoded.data._id,
-        email: decoded.data.email,
         token: tokenFromClient,
       })
       if (!result) {
@@ -33,7 +32,6 @@ const isAuth = async (req, res, next) => {
           message: statusMessage.USER_IS_NOT_VALIDATED,
         })
       }
-      // console.log(decoded)
       req.jwtDecoded = decoded;
       req.userDataPass = result;
 
