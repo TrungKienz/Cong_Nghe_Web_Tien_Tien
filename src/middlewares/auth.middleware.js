@@ -7,12 +7,12 @@ const accessTokenSecret =
   process.env.ACCESS_TOKEN_SECRET || "accessTokenSecret";
 
 const isAuth = async (req, res, next) => {
+  console.log("formdata: ",req.file)
   const tokenFromClient =
     req.body.token || req.query.token || req.headers["x-access-token"];
   console.log("Token", tokenFromClient)
   if (tokenFromClient) {
-    try {
-      console.log("here")
+    try { 
       // if(tokenFromClient)
       const decoded = await jwtHelper.verifyToken(
         tokenFromClient,

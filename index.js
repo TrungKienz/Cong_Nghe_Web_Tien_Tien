@@ -1,12 +1,8 @@
 require("dotenv").config();
-const express = require("express");
 const app = require("express")();
 const server = require("http").createServer(app);
 const io = require("socket.io")(server);
-const bodyParser = require("body-parser");
-var cors = require("cors");
-var multer = require("multer");
-var upload = multer({ dest: "uploads/" });
+
 // const ThumbnailGenerator = require('video-thumbnail-generator').default;
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffmpeg = require("fluent-ffmpeg");
@@ -22,22 +18,6 @@ route(app);
 database.connect();
 
 const port = process.env.PORT || 3000;
-// const firstParamsRoute = process.env.FIRST_PARAMS_ROUTE || "it4788";
-
-// const app = express();
-app.use(cors());
-app.use(bodyParser.json({ limit: "50mb" })); // for parsing application/json
-app.use(bodyParser.urlencoded({ limit: "50mb", extended: true })); // for parsing application/x-www-form-urlencoded
-app.use(express.json());
-var cpUpload = upload.fields([
-  { name: "images", maxCount: 4 },
-  { name: "video", maxCount: 1 },
-  { name: "avatar", maxCount: 1 },
-  { name: "avatar[]", maxCount: 1 },
-  { name: "cover_image", maxCount: 1},
-  { name: "cover_image[]", maxCount: 1 },
-]);
-app.use(cpUpload);
 
 app.all("/", (req, res) => {
   res.send("Mạng xã hội CÓ TÍNH PHÍ !!!!!!!!!");
