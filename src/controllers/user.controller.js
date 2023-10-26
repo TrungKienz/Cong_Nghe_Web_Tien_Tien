@@ -39,7 +39,7 @@ const changeInfoAfterSignup = async (req, res) => {
     }
     else {
       if(avatar){
-        if (avatar[0].size > 1024 * 1024 * 4) {
+        if (avatar[0].size > 1024 * 1024 * 4) { 
           console.log("quá 4mb dung lượng tối đa cho phép");
           return res.status(200).json({
             code: statusCode.FILE_SIZE_IS_TOO_BIG,
