@@ -9,7 +9,9 @@ router.post("/add_post", isAuth, postController.addPost);
 router.post("/get_post", isAuth, postController.getPost);
 router.post("/edit_post", isAuth,postController.editPost);
 router.post("/delete_post", isAuth,postController.deletePost);
-// router.post("/report_post", postController.reportPost);
+router.post("/report_post", isAuth,postController.reportPost);
+router.post("/feel", isAuth,postController.feel);
+
 // router.post("/like", postController.like);
 
 // router.post("/get_comment", postController.getComment);

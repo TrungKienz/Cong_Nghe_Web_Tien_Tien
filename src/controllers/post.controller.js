@@ -538,7 +538,7 @@ const deletePost = async (req, res) => {
       {$pull: {
         postIds: id,
       }})
-      
+
     if (!result) {
       console.log("Khong tim thay bai viet");
       throw Error("Post is not existed");
@@ -602,6 +602,63 @@ const reportPost = async (req, res) => {
     }
   }
 };
+
+const feel = async (req, res) => {
+  const { id, type } = req.query;
+  const _id = req.userDataPass._id;
+
+  try {
+    const postDataPre = await Post.findOne({ _id: id });
+    console.log(postDataPre.disappointed_list.includes(_id));
+
+    if (
+      postDataPre.disappointed_list.includes(_id) ||
+      postDataPre.disappointed_list.some(element => element === _id) ||
+      postDataPre.kudos_list.some(element => element === _id)
+    ) {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+      });
+    }
+
+
+    let updateFields = {};
+
+    if (type == 0) {
+      updateFields = {
+        $inc: { disappointed: 1 },
+        $push: { disappointed_list: _id },
+      };
+    } else if (type == 1) {
+      updateFields = {
+        $inc: { kudos: 1 },
+        $push: { kudos_list: _id },
+      };
+    }
+
+    const postData = await Post.findOneAndUpdate({ _id: id }, updateFields);
+
+    if (postData) {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: statusMessage.OK,
+      });
+    } else {
+      return res.status(404).json({
+        code: statusCode.NOT_FOUND,
+        message: statusMessage.NOT_FOUND,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      code: statusCode.EXCEPTION_ERROR,
+      message: statusMessage.EXCEPTION_ERROR,
+    });
+  }
+};
+
+
 
 const like = async (req, res) => {
   const { id} = req.query;
@@ -948,6 +1005,7 @@ module.exports = {
   editPost,
   deletePost,
   reportPost,
+  feel,
   like,
   getComment,
   setComment,
