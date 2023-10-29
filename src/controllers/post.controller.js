@@ -16,6 +16,7 @@ const cloudHelper = require("../helpers/cloud.helper.js");
 const statusCode = require("./../constants/statusCode.constant.js");
 const statusMessage = require("./../constants/statusMessage.constant.js");
 const { Mongoose } = require("mongoose");
+
 const deletePostAll = async (req, res)=>{
   var userAll = await User.find({});
   await Promise.all(userAll.map(userData=>{
@@ -186,6 +187,7 @@ const removeAscent = (str) => {
   str = str.replace(/đ/g, "d");
   return str;
 }
+
 const getPost = async (req, res) => {
   const { token, id } = req.query;
   const { _id } = req.userDataPass;
@@ -215,6 +217,7 @@ const getPost = async (req, res) => {
       throw Error("POST_IS_NOT_EXISTED");
     }
     var resultUser = await User.findOne({ _id: idAuthor });
+    console.log(resultUser.postIds)
     if (resultUser.blockedIds.includes(_id)) {
       return res.status(200).json({
         code: statusCode.OK,
@@ -224,52 +227,138 @@ const getPost = async (req, res) => {
         },
       });
     } else {
-      return res.status(200).json({
-        code: statusCode.OK,
-        message: statusMessage.OK,
-        // data: result,
-        data: {
-          id: result._id,
-          name: null,
-          created: result.created,
-          described: result.described,
-          modified: result.modified,
-          fake: null,
-          trust: null,
-          kudos: null,
-          disappointed: null,
-          is_rated: null,
-          is_masked: null,
-          image:{
-            id: result.image?._id,
-            url: result.image?.url,
-          },
-          video:{
-            id: result.video._id,
-            url: result.video.url,
-          },
-          author: {
-            id: resultUser._id,
-            name: resultUser.name,
-            avatar: resultUser.avatar,
-            coins: resultUser.coins,
-            listing: resultUser.listing,
-          },
-          // category: {
-          //   id: result.category._id,
-          //   name: result.category.name,
-          //   has_name: result.category.has_name,
-          // },
-          state: result.state,
-          is_blocked: result.is_blocked,
-          can_edit: null,
-          banned: null,
-          can_mask: null,
-          can_rate: null,
-          url: null,
-          message: null,
-        }
-      });
+      if (result.image) {
+        return res.status(200).json({
+          code: statusCode.OK,
+          message: statusMessage.OK,
+          // data: result,
+          data: {
+            id: result._id,
+            name: null,
+            created: result.created,
+            described: result.described,
+            modified: result.modified,
+            fake: null,
+            trust: null,
+            kudos: null,
+            disappointed: null,
+            is_rated: null,
+            is_masked: null,
+            image: result.image?.map((image) => ({
+              id: image._id,
+              url: image.url,
+            })),
+            author: {
+              id: resultUser._id,
+              name: resultUser.name,
+              avatar: resultUser.avatar,
+              coins: resultUser.coins,
+              listing: resultUser.postIds.map((postId) => ({
+                postId: postId,
+              })),
+            },
+            // category: {
+            //   id: result.category._id,
+            //   name: result.category.name,
+            //   has_name: result.category.has_name,
+            // },
+            state: result.state,
+            is_blocked: result.is_blocked,
+            can_edit: null,
+            banned: null,
+            can_mask: null,
+            can_rate: null,
+            url: null,
+            message: null,
+          } 
+        });
+      } else if (result.video) {
+        return res.status(200).json({
+          code: statusCode.OK,
+          message: statusMessage.OK,
+          // data: result,
+          data: {
+            id: result._id,
+            name: null,
+            created: result.created,
+            described: result.described,
+            modified: result.modified,
+            fake: null,
+            trust: null,
+            kudos: null,
+            disappointed: null,
+            is_rated: null,
+            is_masked: null,
+            video: result.video?.map((video) => ({
+              id: video._id,
+              url: video.url,
+            })),
+            author: {
+              id: resultUser._id,
+              name: resultUser.name,
+              avatar: resultUser.avatar,
+              coins: resultUser.coins,
+              listing: resultUser.postIds.map((postId) => ({
+                postId: postId,
+              })),
+            },
+            // category: {
+            //   id: result.category._id,
+            //   name: result.category.name,
+            //   has_name: result.category.has_name,
+            // },
+            state: result.state,
+            is_blocked: result.is_blocked,
+            can_edit: null,
+            banned: null,
+            can_mask: null,
+            can_rate: null,
+            url: null,
+            message: null,
+          } 
+        });
+      } else {
+        return res.status(200).json({
+          code: statusCode.OK,
+          message: statusMessage.OK,
+          // data: result,
+          data: {
+            id: result._id,
+            name: null,
+            created: result.created,
+            described: result.described,
+            modified: result.modified,
+            fake: null,
+            trust: null,
+            kudos: null,
+            disappointed: null,
+            is_rated: null,
+            is_masked: null,
+            author: {
+              id: resultUser._id,
+              name: resultUser.name,
+              avatar: resultUser.avatar,
+              coins: resultUser.coins,
+              listing: resultUser.postIds.map((postId) => ({
+                postId: postId,
+              })),
+            },
+            // category: {
+            //   id: result.category._id,
+            //   name: result.category.name,
+            //   has_name: result.category.has_name,
+            // },
+            state: result.state,
+            is_blocked: result.is_blocked,
+            can_edit: null,
+            banned: null,
+            can_mask: null,
+            can_rate: null,
+            url: null,
+            message: null,
+          } 
+        });
+      }
     }
     // }
   } catch (error) {
