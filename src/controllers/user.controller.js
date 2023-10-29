@@ -28,8 +28,8 @@ const logout = async (req, res) => {
 }
 
 const changeInfoAfterSignup = async (req, res) => {
-  const { _id, email } = req.userDataPass;
-  const { username } = req.body;
+  const { _id } = req.userDataPass;
+  const { username } = req.query;
   // username
   const avatar = req.files['avatar'];
   const timeCurrent = Date.now();
@@ -56,15 +56,22 @@ const changeInfoAfterSignup = async (req, res) => {
         }
         const result = await cloudHelper.upload(avatar[0], 'avatar'); //lưu và đổi tên file
         // update tên user và đường dẫn avatar, thời gian sửa đổi
-
+        await User.findOneAndUpdate(
+          {_id: _id},
+          {
+            $set: {
+              avatar: result.url,
+            }
+          }
+        )
         return res.status(200).json({
           code: statusCode.OK,
           message: statusMessage.OK,
           data: {
             id: _id,
             username: username,
-            phonenumber: phonenumber,
-            created: timeCurrent,
+            email: username,
+            created: Date(timeCurrent),
             avatar: result.url,
           },
         });
@@ -75,8 +82,8 @@ const changeInfoAfterSignup = async (req, res) => {
           data: {
             id: _id,
             username: username,
-            phonenumber: phonenumber,
-            created: timeCurrent,
+            email: username,
+            created: Date(timeCurrent),
             avatar: req.userDataPass.avatar,
           },
         });

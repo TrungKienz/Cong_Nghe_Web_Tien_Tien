@@ -31,6 +31,7 @@ const deletePostAll = async (req, res)=>{
     message: "drop ok"
   })
 }
+
 const addPost = async (req, res) => {
   const { token, described, state, can_edit, status } = req.query;
   const { _id } = req.userDataPass;
@@ -40,6 +41,15 @@ const addPost = async (req, res) => {
   try {
     var newPost;
     var result = await formidableHelper.parse(req);
+    const userData = await User.findOne({_id: _id});
+    const currentCoin = userData.coins;
+    if (currentCoin < 4) {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: "Not enough coin",
+      })
+    }
+
     if (video) {
       var result2 = await cloudHelper.upload(result.data[0], "video");
       newPost = await new Post({
@@ -91,18 +101,30 @@ const addPost = async (req, res) => {
       }).save();
       
     }
-    var userData= await User.findOneAndUpdate(
+
+    const updatedCoin = currentCoin - 4; 
+
+    await User.findOneAndUpdate(
       { _id: _id },
       {
         $push: {
           postIds: newPost._id,
         },
+        $set: {
+          coins: updatedCoin,
+        }
       }
     );
+
     res.status(200).json({
       code: statusCode.OK,
       message: statusMessage.OK,
-      data: newPost,
+      // data: newPost,
+      data: {
+        id: newPost._id,
+        url: null,
+        coins: updatedCoin,
+      }
       // user: userData
     });
     try {
@@ -150,6 +172,8 @@ const addPost = async (req, res) => {
     }
   }
 };
+
+
 const removeAscent = (str) => {
   if (str === null || str === undefined) return str;
   str = str.toLowerCase();
@@ -185,12 +209,12 @@ const getPost = async (req, res) => {
               select: "username avatar"
             }
           });
-    // console.log(result);
+    const idAuthor = result.author._id;
     if (!result || result.is_blocked) {
       // không tìm thấy bài viết hoặc vi phạm tiêu chuẩn cộng đồng
       throw Error("POST_IS_NOT_EXISTED");
     }
-    var resultUser = await User.findOne({ _id: result.author._id });
+    var resultUser = await User.findOne({ _id: idAuthor });
     if (resultUser.blockedIds.includes(_id)) {
       return res.status(200).json({
         code: statusCode.OK,
@@ -203,7 +227,48 @@ const getPost = async (req, res) => {
       return res.status(200).json({
         code: statusCode.OK,
         message: statusMessage.OK,
-        data: result,
+        // data: result,
+        data: {
+          id: result._id,
+          name: null,
+          created: result.created,
+          described: result.described,
+          modified: result.modified,
+          fake: null,
+          trust: null,
+          kudos: null,
+          disappointed: null,
+          is_rated: null,
+          is_masked: null,
+          image:{
+            id: result.image?._id,
+            url: result.image?.url,
+          },
+          video:{
+            id: result.video._id,
+            url: result.video.url,
+          },
+          author: {
+            id: resultUser._id,
+            name: resultUser.name,
+            avatar: resultUser.avatar,
+            coins: resultUser.coins,
+            listing: resultUser.listing,
+          },
+          // category: {
+          //   id: result.category._id,
+          //   name: result.category.name,
+          //   has_name: result.category.has_name,
+          // },
+          state: result.state,
+          is_blocked: result.is_blocked,
+          can_edit: null,
+          banned: null,
+          can_mask: null,
+          can_rate: null,
+          url: null,
+          message: null,
+        }
       });
     }
     // }
