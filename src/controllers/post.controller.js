@@ -36,7 +36,7 @@ const deletePostAll = async (req, res)=>{
 const addPost = async (req, res) => {
   const { token, described, state, can_edit, status } = req.query;
   const { _id } = req.userDataPass;
-  const images = req.files['images'];
+  const images = req.files['image'];
   const video = req.files['video'];
   // validate input
   try {
@@ -384,12 +384,11 @@ const editPost = async (req, res) => {
     state,
     image_del,
     image_sort,
-    thumb,
-    auto_block,
     auto_accept,
-  } = req.body;
+  } = req.query;
+  
   try {
-    // console.log(image_del, image_del.length, typeof image_del)
+    console.log(image_del, image_del.length, typeof image_del)
     if (
       !id ||
       (described && described.length > 500) ||
@@ -398,12 +397,33 @@ const editPost = async (req, res) => {
     ) {
       throw Error("params");
     }
-    const postData = await Post.findOne({ _id: id });
   try {
-
-    const images = req.files['images'];
+    const images = req.files['image'];
     const video = req.files['video'];
     var updateData = {};
+    const postData = await Post.findOne({ _id: id });
+    const postDate = new Date(postData.created);
+    const currentDate = Date.now();
+
+    // Số mili giây trong một ngày
+    const oneDayInMillis = 24 * 60 * 60 * 1000;
+
+    var isPostOverOneDay = false;
+
+    if (currentDate - postDate > oneDayInMillis) {
+      isPostOverOneDay = true;
+    }
+
+    const authorData = await User.findOne({_id: postData.author})
+    const currentCoin = authorData.coins;
+
+    if (isPostOverOneDay == true && currentCoin < 4){
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: "Not enough coin",
+      })
+    }
+    
     if (described) {
       postData.described = described;
       postData.keyword = removeAscent(described);
@@ -425,20 +445,13 @@ const editPost = async (req, res) => {
           return true;
         }
       });
-      // postData.image= data2;
-      // console.log(image_del, postData.image)
     }
     if (video) {
       cloudHelper
           .upload(video[0])
           .then(async (result2) => {
             updateData.video = result2;
-            var editPost = await postData.save();
-            return res.status(200).json({
-              code: statusCode.OK,
-              message: statusMessage.OK,
-              data: editPost,
-            });
+            await postData.save();
           })
           .catch((err) => {
             throw err;
@@ -449,26 +462,33 @@ const editPost = async (req, res) => {
             return cloudHelper.upload(element);
           })
       ).then(async (result2) => {
-        // console.log(result2)
         postData.image =
             postData.image && postData.length == 0
                 ? result2
                 : postData.image.concat(result2);
-        var editPost = await postData.save();
-        return res.status(200).json({
-          code: statusCode.OK,
-          message: statusMessage.OK,
-          data: editPost,
-        });
+        await postData.save();
       });
     } else {
-      var editPost = await postData.save();
+      await postData.save();
+    }
+    if (isPostOverOneDay == true) {
+      authorData.coins = currentCoin - 4;
+      authorData.save();
       return res.status(200).json({
         code: statusCode.OK,
-        message: statusMessage.OK,
-        data: editPost,
-      });
+        message: {
+          coins: currentCoin - 4,
+        }
+      })
+    } else {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: {
+          coins: currentCoin,
+        }
+      })
     }
+
   }catch (e) {
     return res.status(200).json({
       code: statusCode.FILE_SIZE_IS_TOO_BIG,
@@ -500,17 +520,34 @@ const deletePost = async (req, res) => {
   const { id } = req.query;
   const { _id } = req.userDataPass;
   try {
+    const authorData = await User.findOne({_id: _id});
+    const currentCoin = authorData.coins;
+    if (currentCoin < 4){
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: "Not enough coin"
+      })
+    }
     var result = await Post.findOneAndDelete({
       _id: id,
       author: _id,
     });
+
+    await User.updateOne(
+      {_id: _id},
+      {$pull: {
+        postIds: id,
+      }})
+      
     if (!result) {
       console.log("Khong tim thay bai viet");
       throw Error("Post is not existed");
     }
     return res.status(200).json({
       code: statusCode.OK,
-      message: statusMessage.OK,
+      message: {
+        coins: currentCoin,
+      },
     });
   } catch (error) {
     if (error.message == "Post is not existed") {
