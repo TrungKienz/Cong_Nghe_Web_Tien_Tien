@@ -16,6 +16,7 @@ const cloudHelper = require("../helpers/cloud.helper.js");
 const statusCode = require("./../constants/statusCode.constant.js");
 const statusMessage = require("./../constants/statusMessage.constant.js");
 const { Mongoose } = require("mongoose");
+
 const deletePostAll = async (req, res)=>{
   var userAll = await User.find({});
   await Promise.all(userAll.map(userData=>{
@@ -31,15 +32,25 @@ const deletePostAll = async (req, res)=>{
     message: "drop ok"
   })
 }
+
 const addPost = async (req, res) => {
   const { token, described, state, can_edit, status } = req.query;
   const { _id } = req.userDataPass;
-  const images = req.files['images'];
+  const images = req.files['image'];
   const video = req.files['video'];
   // validate input
   try {
     var newPost;
     var result = await formidableHelper.parse(req);
+    const userData = await User.findOne({_id: _id});
+    const currentCoin = userData.coins;
+    if (currentCoin < 4) {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: "Not enough coin",
+      })
+    }
+
     if (video) {
       var result2 = await cloudHelper.upload(result.data[0], "video");
       newPost = await new Post({
@@ -91,18 +102,30 @@ const addPost = async (req, res) => {
       }).save();
       
     }
-    var userData= await User.findOneAndUpdate(
+
+    const updatedCoin = currentCoin - 4; 
+
+    await User.findOneAndUpdate(
       { _id: _id },
       {
         $push: {
           postIds: newPost._id,
         },
+        $set: {
+          coins: updatedCoin,
+        }
       }
     );
+
     res.status(200).json({
       code: statusCode.OK,
       message: statusMessage.OK,
-      data: newPost,
+      // data: newPost,
+      data: {
+        id: newPost._id,
+        url: null,
+        coins: updatedCoin,
+      }
       // user: userData
     });
     try {
@@ -150,6 +173,8 @@ const addPost = async (req, res) => {
     }
   }
 };
+
+
 const removeAscent = (str) => {
   if (str === null || str === undefined) return str;
   str = str.toLowerCase();
@@ -162,6 +187,7 @@ const removeAscent = (str) => {
   str = str.replace(/đ/g, "d");
   return str;
 }
+
 const getPost = async (req, res) => {
   const { token, id } = req.query;
   const { _id } = req.userDataPass;
@@ -185,12 +211,13 @@ const getPost = async (req, res) => {
               select: "username avatar"
             }
           });
-    // console.log(result);
+    const idAuthor = result.author._id;
     if (!result || result.is_blocked) {
       // không tìm thấy bài viết hoặc vi phạm tiêu chuẩn cộng đồng
       throw Error("POST_IS_NOT_EXISTED");
     }
-    var resultUser = await User.findOne({ _id: result.author._id });
+    var resultUser = await User.findOne({ _id: idAuthor });
+    console.log(resultUser.postIds)
     if (resultUser.blockedIds.includes(_id)) {
       return res.status(200).json({
         code: statusCode.OK,
@@ -200,11 +227,138 @@ const getPost = async (req, res) => {
         },
       });
     } else {
-      return res.status(200).json({
-        code: statusCode.OK,
-        message: statusMessage.OK,
-        data: result,
-      });
+      if (result.image) {
+        return res.status(200).json({
+          code: statusCode.OK,
+          message: statusMessage.OK,
+          // data: result,
+          data: {
+            id: result._id,
+            name: null,
+            created: result.created,
+            described: result.described,
+            modified: result.modified,
+            fake: null,
+            trust: null,
+            kudos: null,
+            disappointed: null,
+            is_rated: null,
+            is_masked: null,
+            image: result.image?.map((image) => ({
+              id: image._id,
+              url: image.url,
+            })),
+            author: {
+              id: resultUser._id,
+              name: resultUser.name,
+              avatar: resultUser.avatar,
+              coins: resultUser.coins,
+              listing: resultUser.postIds.map((postId) => ({
+                postId: postId,
+              })),
+            },
+            // category: {
+            //   id: result.category._id,
+            //   name: result.category.name,
+            //   has_name: result.category.has_name,
+            // },
+            state: result.state,
+            is_blocked: result.is_blocked,
+            can_edit: null,
+            banned: null,
+            can_mask: null,
+            can_rate: null,
+            url: null,
+            message: null,
+          } 
+        });
+      } else if (result.video) {
+        return res.status(200).json({
+          code: statusCode.OK,
+          message: statusMessage.OK,
+          // data: result,
+          data: {
+            id: result._id,
+            name: null,
+            created: result.created,
+            described: result.described,
+            modified: result.modified,
+            fake: null,
+            trust: null,
+            kudos: null,
+            disappointed: null,
+            is_rated: null,
+            is_masked: null,
+            video: result.video?.map((video) => ({
+              id: video._id,
+              url: video.url,
+            })),
+            author: {
+              id: resultUser._id,
+              name: resultUser.name,
+              avatar: resultUser.avatar,
+              coins: resultUser.coins,
+              listing: resultUser.postIds.map((postId) => ({
+                postId: postId,
+              })),
+            },
+            // category: {
+            //   id: result.category._id,
+            //   name: result.category.name,
+            //   has_name: result.category.has_name,
+            // },
+            state: result.state,
+            is_blocked: result.is_blocked,
+            can_edit: null,
+            banned: null,
+            can_mask: null,
+            can_rate: null,
+            url: null,
+            message: null,
+          } 
+        });
+      } else {
+        return res.status(200).json({
+          code: statusCode.OK,
+          message: statusMessage.OK,
+          // data: result,
+          data: {
+            id: result._id,
+            name: null,
+            created: result.created,
+            described: result.described,
+            modified: result.modified,
+            fake: null,
+            trust: null,
+            kudos: null,
+            disappointed: null,
+            is_rated: null,
+            is_masked: null,
+            author: {
+              id: resultUser._id,
+              name: resultUser.name,
+              avatar: resultUser.avatar,
+              coins: resultUser.coins,
+              listing: resultUser.postIds.map((postId) => ({
+                postId: postId,
+              })),
+            },
+            // category: {
+            //   id: result.category._id,
+            //   name: result.category.name,
+            //   has_name: result.category.has_name,
+            // },
+            state: result.state,
+            is_blocked: result.is_blocked,
+            can_edit: null,
+            banned: null,
+            can_mask: null,
+            can_rate: null,
+            url: null,
+            message: null,
+          } 
+        });
+      }
     }
     // }
   } catch (error) {
@@ -230,12 +384,11 @@ const editPost = async (req, res) => {
     state,
     image_del,
     image_sort,
-    thumb,
-    auto_block,
     auto_accept,
-  } = req.body;
+  } = req.query;
+  
   try {
-    // console.log(image_del, image_del.length, typeof image_del)
+    console.log(image_del, image_del.length, typeof image_del)
     if (
       !id ||
       (described && described.length > 500) ||
@@ -244,12 +397,33 @@ const editPost = async (req, res) => {
     ) {
       throw Error("params");
     }
-    const postData = await Post.findOne({ _id: id });
   try {
-
-    const images = req.files['images'];
+    const images = req.files['image'];
     const video = req.files['video'];
     var updateData = {};
+    const postData = await Post.findOne({ _id: id });
+    const postDate = new Date(postData.created);
+    const currentDate = Date.now();
+
+    // Số mili giây trong một ngày
+    const oneDayInMillis = 24 * 60 * 60 * 1000;
+
+    var isPostOverOneDay = false;
+
+    if (currentDate - postDate > oneDayInMillis) {
+      isPostOverOneDay = true;
+    }
+
+    const authorData = await User.findOne({_id: postData.author})
+    const currentCoin = authorData.coins;
+
+    if (isPostOverOneDay == true && currentCoin < 4){
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: "Not enough coin",
+      })
+    }
+    
     if (described) {
       postData.described = described;
       postData.keyword = removeAscent(described);
@@ -271,20 +445,13 @@ const editPost = async (req, res) => {
           return true;
         }
       });
-      // postData.image= data2;
-      // console.log(image_del, postData.image)
     }
     if (video) {
       cloudHelper
           .upload(video[0])
           .then(async (result2) => {
             updateData.video = result2;
-            var editPost = await postData.save();
-            return res.status(200).json({
-              code: statusCode.OK,
-              message: statusMessage.OK,
-              data: editPost,
-            });
+            await postData.save();
           })
           .catch((err) => {
             throw err;
@@ -295,26 +462,33 @@ const editPost = async (req, res) => {
             return cloudHelper.upload(element);
           })
       ).then(async (result2) => {
-        // console.log(result2)
         postData.image =
             postData.image && postData.length == 0
                 ? result2
                 : postData.image.concat(result2);
-        var editPost = await postData.save();
-        return res.status(200).json({
-          code: statusCode.OK,
-          message: statusMessage.OK,
-          data: editPost,
-        });
+        await postData.save();
       });
     } else {
-      var editPost = await postData.save();
+      await postData.save();
+    }
+    if (isPostOverOneDay == true) {
+      authorData.coins = currentCoin - 4;
+      authorData.save();
       return res.status(200).json({
         code: statusCode.OK,
-        message: statusMessage.OK,
-        data: editPost,
-      });
+        message: {
+          coins: currentCoin - 4,
+        }
+      })
+    } else {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: {
+          coins: currentCoin,
+        }
+      })
     }
+
   }catch (e) {
     return res.status(200).json({
       code: statusCode.FILE_SIZE_IS_TOO_BIG,
@@ -346,17 +520,34 @@ const deletePost = async (req, res) => {
   const { id } = req.query;
   const { _id } = req.userDataPass;
   try {
+    const authorData = await User.findOne({_id: _id});
+    const currentCoin = authorData.coins;
+    if (currentCoin < 4){
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: "Not enough coin"
+      })
+    }
     var result = await Post.findOneAndDelete({
       _id: id,
       author: _id,
     });
+
+    await User.updateOne(
+      {_id: _id},
+      {$pull: {
+        postIds: id,
+      }})
+
     if (!result) {
       console.log("Khong tim thay bai viet");
       throw Error("Post is not existed");
     }
     return res.status(200).json({
       code: statusCode.OK,
-      message: statusMessage.OK,
+      message: {
+        coins: currentCoin,
+      },
     });
   } catch (error) {
     if (error.message == "Post is not existed") {
@@ -411,6 +602,63 @@ const reportPost = async (req, res) => {
     }
   }
 };
+
+const feel = async (req, res) => {
+  const { id, type } = req.query;
+  const _id = req.userDataPass._id;
+
+  try {
+    const postDataPre = await Post.findOne({ _id: id });
+    console.log(postDataPre.disappointed_list.includes(_id));
+
+    if (
+      postDataPre.disappointed_list.includes(_id) ||
+      postDataPre.disappointed_list.some(element => element === _id) ||
+      postDataPre.kudos_list.some(element => element === _id)
+    ) {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+      });
+    }
+
+
+    let updateFields = {};
+
+    if (type == 0) {
+      updateFields = {
+        $inc: { disappointed: 1 },
+        $push: { disappointed_list: _id },
+      };
+    } else if (type == 1) {
+      updateFields = {
+        $inc: { kudos: 1 },
+        $push: { kudos_list: _id },
+      };
+    }
+
+    const postData = await Post.findOneAndUpdate({ _id: id }, updateFields);
+
+    if (postData) {
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: statusMessage.OK,
+      });
+    } else {
+      return res.status(404).json({
+        code: statusCode.NOT_FOUND,
+        message: statusMessage.NOT_FOUND,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      code: statusCode.EXCEPTION_ERROR,
+      message: statusMessage.EXCEPTION_ERROR,
+    });
+  }
+};
+
+
 
 const like = async (req, res) => {
   const { id} = req.query;
@@ -757,6 +1005,7 @@ module.exports = {
   editPost,
   deletePost,
   reportPost,
+  feel,
   like,
   getComment,
   setComment,

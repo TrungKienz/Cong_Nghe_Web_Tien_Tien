@@ -9,6 +9,14 @@ const postSchema = new mongoose.Schema({
   created: Date,
   modified: Date,
   like: Number,
+  disappointed: Number,
+  disappointed_list: [{
+    // type: Schema.Types.ObjectId,
+  }],
+  kudos: Number,
+  kudos_list: [{
+    // type: Schema.Types.ObjectId,
+  }],
   comment: Number,
   comment_list: [{
     type: Schema.Types.ObjectId,

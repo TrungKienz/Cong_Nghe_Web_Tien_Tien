@@ -303,9 +303,9 @@ const checkVerifyCode = async (req, res) => {
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-              token: accessToken,
+              // token: accessToken,
               id: userData._id,
-              active: userData.active,
+              active: 1,
             },
           });
       } else {

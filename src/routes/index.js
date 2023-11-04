@@ -13,7 +13,7 @@ const testRouter = require('./test.route');
 
 // const articleRouter = require('./Article');
 const cpUpload = upload.fields([
-    { name: "images", maxCount: 4 },
+    { name: "image", maxCount: 4 },
     { name: "video", maxCount: 1 },
     { name: "avatar", maxCount: 1 },
     { name: "avatar[]", maxCount: 1 },

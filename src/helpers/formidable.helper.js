@@ -6,9 +6,9 @@ const statusCode = require("../constants/statusCode.constant");
 const cloud = require("./cloud.helper");
 let parse = (req, postData) => {
   return new Promise(async (resolve, reject) => {
-    var imageList = (req.files&& req.files["images[]"])?req.files["images[]"]:[];
+    var imageList = (req.files&& req.files["image[]"])?req.files["image[]"]:[];
     var videoList = (req.files&& req.files.video)?req.files.video:null;
-    var numberOfImages = (req.files&& req.files["images[]"])?req.files["images[]"].length:0;
+    var numberOfImages = (req.files&& req.files["image[]"])?req.files["image[]"].length:0;
     var numberOfVideos = (req.files&& req.files.video&&req.files.video[0].mimetype.slice(0,5)=="video")?req.files.video.length:0;
     if(!numberOfImages&&!numberOfVideos){
       console.log("khong co anh va video")
