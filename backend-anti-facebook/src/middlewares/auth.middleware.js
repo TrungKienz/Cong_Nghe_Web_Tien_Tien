@@ -9,7 +9,7 @@ const accessTokenSecret =
 const isAuth = async (req, res, next) => {
   console.log("formdata: ",req.file)
   const tokenFromClient =
-    req.body.token || req.query.token || req.headers["x-access-token"];
+  req.query.token || req.body.token || req.headers["x-access-token"];
   console.log("Token", tokenFromClient)
   if (tokenFromClient) {
     try { 
