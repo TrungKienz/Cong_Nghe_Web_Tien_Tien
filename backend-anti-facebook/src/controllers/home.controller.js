@@ -1,3 +1,22 @@
+const dotenv = require("dotenv");
+dotenv.config();
+// const fs = require("fs");
+// const formidable = require("formidable");
+// const { getVideoDurationInSeconds } = require("get-video-duration");
+// const mongoose = require("mongoose");
+
+const Post = require("../models/post.model.js");
+const User = require("../models/user.model.js");
+const ReportPost = require("../models/report.post.model.js");
+const Comment = require("../models/comment.model");
+const Notification = require("../models/notification.model");
+const formidableHelper = require("../helpers/formidable.helper");
+const cloudHelper = require("../helpers/cloud.helper.js");
+
+const statusCode = require("./../constants/statusCode.constant.js");
+const statusMessage = require("./../constants/statusMessage.constant.js");
+const { Mongoose } = require("mongoose");
+
 const getListPosts = async (req, res) => {
   var {
     token,
@@ -50,7 +69,6 @@ const getListPosts = async (req, res) => {
     if(count==null||count=="") count=20;
     if(user_id){
       var resultData = await User.findById(user_id).populate({
-        
         path: "postIds",
         populate: {
           path: "author",
@@ -79,10 +97,23 @@ const getListPosts = async (req, res) => {
       resultData.postIds.map(e=>{
         e.is_liked= e.like_list.includes(_id);
       })
+      
+      // await (resultData.postIds.slice(Number(index),Number(index)+Number(count))).map(element => {
+      //   return res.status(200).json({
+      //     code: statusCode.OK,
+      //     message: statusMessage.OK,
+      //     data: {
+      //       id: element._id,
+      //       name: null, 
+      //       image: element.image,
+      //     }, 
+      //   })
+      // });
+      // console.log(result)
       return res.status(200).json({
         code: statusCode.OK,
         message: statusMessage.OK,
-        data: resultData.postIds.slice(Number(index),Number(index)+Number(count))
+        data: resultData.postIds.slice(Number(index),Number(index)+Number(count)),  
       })
     }
 
