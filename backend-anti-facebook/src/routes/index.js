@@ -9,6 +9,8 @@ const authRouter = require('./auth.route');
 const userRouter = require('./user.route');
 const postRouter = require('./post.route');
 const testRouter = require('./test.route');
+const homeRouter = require('./home.route');
+
 
 
 // const articleRouter = require('./Article');
@@ -26,6 +28,7 @@ const routesArray = [
     { path: '/user', router: userRouter },
     { path: '/post', router: postRouter },
     { path: '/test', router: testRouter },
+    { path: '/home', router: homeRouter },
 ];
 
 
