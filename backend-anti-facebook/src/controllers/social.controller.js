@@ -11,7 +11,7 @@ const addFriend = async (req, res) => {
   const { _id } = req.userDataPass;
   const {user_id} = req.query //target's id
   try {
-
+    let totalRequestsSent = 0
     //Update user
     const ownerData = await User.findOne({ _id: _id })
     if (!ownerData) //For some reason cannot find user
@@ -22,14 +22,16 @@ const addFriend = async (req, res) => {
 
     //Check if friend request already exists
     await User.findOne({ _id: _id }).exec(async (err,user) => {
+      
       let newArr = []
       let arr = user.sendRequestedFriends.toObject()
       arr.forEach(request => {
         newArr.push(request._id.toString())
       });
+      totalRequestsSent = newArr.length
       if (!check_array_contains(newArr, user_id))
       {
-        
+        totalRequestsSent += 1
         ownerData.sendRequestedFriends.push(user_id) // Save sent friend request
         await ownerData.save()
       }
@@ -73,7 +75,7 @@ const addFriend = async (req, res) => {
     return res.status(200).json({
       code: statusCode.OK,
       message: statusMessage.OK,
-      data: targetData,
+      data: {requested_friends: totalRequestsSent},
     })
   } catch (error) {
       return res.status(200).json({
