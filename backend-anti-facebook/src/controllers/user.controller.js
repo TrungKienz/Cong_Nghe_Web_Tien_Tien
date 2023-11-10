@@ -61,7 +61,9 @@ const changeInfoAfterSignup = async (req, res) => {
           {
             $set: {
               avatar: result.url,
+              username: username
             }
+            
           }
         )
         return res.status(200).json({
