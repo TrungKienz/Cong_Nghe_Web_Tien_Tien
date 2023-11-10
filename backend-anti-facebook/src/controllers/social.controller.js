@@ -11,6 +11,11 @@ const addFriend = async (req, res) => {
   const { _id } = req.userDataPass;
   const {user_id} = req.query //target's id
   try {
+    if (!(user_id !== undefined)) // Check if params are provided
+    {
+      throw ({code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+        message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing user_id"})
+    }
     let totalRequestsSent = 0
     //Update user
     const ownerData = await User.findOne({ _id: _id })
@@ -86,13 +91,26 @@ const addFriend = async (req, res) => {
 }
 
 const getListOfFriendSuggestions = async (req, res) => {
-  let { count } = req.query;// gửi bằng query params
+  const { _id } = req.userDataPass;
+  let {index, count } = req.query;// gửi bằng query params
   //const { _id } = req.userDataPass;
   try {
-    const update = { coins: 1000 };
+
+    if (!(index !== undefined) || !(count !== undefined)) // Check if params are provided
+    {
+      throw ({code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+        message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing index or count"})
+    }
+
+    if (isNaN(+index) || isNaN(count)) // Check if params are of number type
+    {
+      throw ({code: statusCode.PARAMETER_TYPE_IS_INVALID,
+        message: statusMessage.PARAMETER_TYPE_IS_INVALID + " - index or count is not a number"})
+    }
+
     let newList = []
     //const filter = { settings.}
-    const usersData = await User.find().select('email').exec();
+    const usersData = await User.find().select('username').exec();
     if (!usersData) //For some reason cannot find any user
     {
       throw ({code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
@@ -102,15 +120,24 @@ const getListOfFriendSuggestions = async (req, res) => {
     usersData.forEach(user => {
       user = user.toObject() // ew
       user.same_friends = 1 // TODO
-      newList.push(user)
+      if (user._id.toString() != _id.toString()) //Exclude the user's id
+      {
+        newList.push(user)
+      }
     });
 
     newList = shuffle(newList)
-    if (count) 
+
+    if (index > newList.length -1)
     {
-      count = Math.min(count, newList.length)
-      newList = newList.slice(0, count)
+      throw ({code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID + " - Provided index is out of range"})
     }
+
+    newList = newList.slice(index)
+
+    count = Math.min(count, newList.length)
+    newList = newList.slice(0, count)
 
     return res.status(202).json({
       code: statusCode.OK,
@@ -127,6 +154,11 @@ const getListOfFriendSuggestions = async (req, res) => {
 
 
 //Common functions
+function isNumber(e)
+{
+  return typeof e === 'number'
+}
+
 function check_array_contains(array, value)
 {
   return array.includes(value)
