@@ -361,14 +361,28 @@ const getUserInfo = async (req, res) => {
       console.log("trùng với id của user");
       var userData = await User.findById(_id).populate({
         path: "friends",
-        select: "username avatar"
+        select: "_id username created description avatar cover_image link address city country listing is_friend online"
       });
       var listing = userData.friends.length;
       userData.listing = listing;
       return res.status(200).json({
         code: statusCode.OK,
         message: statusMessage.OK,
-        data: userData,
+        data: {
+          id: userData._id ? userData._id: null,
+          username: userData.username ? userData.username: null,
+          created: userData.created ? userData.created: null,
+          description: userData.description ? userData.description: null,
+          avatar: userData.avatar ? userData.avatar: null,
+          cover_image: userData.cover_image ? userData.cover_image: null,
+          link: userData.link ? userData.link: null,
+          address: userData.address ? userData.address: null,
+          city: userData.city ? userData.city: null,
+          country: userData.country ? userData.country: null,
+          listing: userData.listing ? userData.listing: null,
+          is_friend: userData.is_friend ? userData.is_friend: null,
+          online: userData.online ? userData.online: null,
+        },
       });
     }
     // nếu xem thông tin của người khác
