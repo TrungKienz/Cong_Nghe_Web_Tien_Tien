@@ -7,6 +7,7 @@ const bodyParser = require("body-parser");
 // Cấu hình định tuyến tổng
 const authRouter = require('./auth.route');
 const userRouter = require('./user.route');
+const socialRouter = require('./social.route');
 const postRouter = require('./post.route');
 const testRouter = require('./test.route');
 const homeRouter = require('./home.route');
@@ -26,6 +27,7 @@ const cpUpload = upload.fields([
 const routesArray = [
     { path: '/auth', router: authRouter },
     { path: '/user', router: userRouter },
+    { path: '/social', router: socialRouter },
     { path: '/post', router: postRouter },
     { path: '/test', router: testRouter },
     { path: '/home', router: homeRouter },
