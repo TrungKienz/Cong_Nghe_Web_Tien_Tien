@@ -361,7 +361,7 @@ const getUserInfo = async (req, res) => {
       console.log("trùng với id của user");
       var userData = await User.findById(_id).populate({
         path: "friends",
-        select: "_id username created description avatar cover_image link address city country listing is_friend online"
+        select: "_id username created description avatar cover_image link address city country listing is_friend online coins"
       });
       var listing = userData.friends.length;
       userData.listing = listing;
@@ -382,6 +382,7 @@ const getUserInfo = async (req, res) => {
           listing: userData.listing ? userData.listing: null,
           is_friend: userData.is_friend ? userData.is_friend: null,
           online: userData.online ? userData.online: null,
+          coins: userData.coins ? userData.coins: null, 
         },
       });
     }
@@ -441,54 +442,59 @@ const getUserInfo = async (req, res) => {
 
 const setUserInfo = async (req, res) => {
   const {
+    token,
     username,
     description,
+    avatar,
     address,
     city,
     country,
-    birthday,
-    link,
-    songtai,
-    dentu,
-    hoctai,
-    nghenghiep,
-    sothich
+    cover_image,
+    link
+    // birthday,
+    // link,
+    // songtai,
+    // dentu,
+    // hoctai,
+    // nghenghiep,
+    // sothich
   } = req.query;
   const {_id}= req.userDataPass;
   try {
     var result = await formidableHelper.parseInfo(req);
     var userData = req.userDataPass;
-    userData.avatar = result.avatar?result.avatar.url:userData.avatar;
-    userData.cover_image = result.cover_image?result.cover_image.url:userData.cover_image;
-    userData.description = description?description:userData.description;
     userData.username = username?username:userData.username;
+    userData.description = description?description:userData.description;
+    userData.avatar = result.avatar?result.avatar.url:userData.avatar;
     userData.address = address?address:userData.address;
     userData.city = city?city:userData.city;
     userData.country = country?country:userData.country;
+    userData.cover_image = result.cover_image?result.cover_image.url:userData.cover_image;
     userData.link = link?link:userData.link;
-    userData.nghenghiep = nghenghiep?nghenghiep:userData.nghenghiep;
-    userData.hoctai = hoctai?hoctai:userData.hoctai;
-    userData.songtai = songtai?songtai:userData.songtai;
-    userData.birthday = birthday?birthday:userData.birthday;
-    userData.dentu = dentu?dentu:userData.dentu;
-    userData.sothich = sothich?sothich:userData.sothich;
+    // userData.nghenghiep = nghenghiep?nghenghiep:userData.nghenghiep;
+    // userData.hoctai = hoctai?hoctai:userData.hoctai;
+    // userData.songtai = songtai?songtai:userData.songtai;
+    // userData.birthday = birthday?birthday:userData.birthday;
+    // userData.dentu = dentu?dentu:userData.dentu;
+    // userData.sothich = sothich?sothich:userData.sothich;
     await userData.save();
     return res.status(200).json({
       code: statusCode.OK,
       message: statusMessage.OK,
       data: {
-        username: username,
+        // username: username,
+        // description: description,
         avatar: result.avatar?result.avatar.url:"",
         cover_image: result.cover_image?result.cover_image.url:"",
-        country: country,
-        city: city,
+        // address: address,
         link: link,
-        description: description,
-        nghenghiep: nghenghiep,
-        hoctai: hoctai,
-        sothich: sothich,
-        songtai: songtai,
-        dentu: dentu
+        city: city,
+        country: country,
+        // nghenghiep: nghenghiep,
+        // hoctai: hoctai,
+        // sothich: sothich,
+        // songtai: songtai,
+        // dentu: dentu
       }
     })
   } catch (error) {
