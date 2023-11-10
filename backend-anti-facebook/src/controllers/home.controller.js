@@ -352,6 +352,59 @@ const setReadNotification = async (req, res) => {
   }
 };
 
+const setDevToken = async (req, res) => {
+  const {
+    token,
+    devtype,
+    devtoken
+  } = req.query;
+  const {_id}= req.userDataPass;
+  try {
+    var result = await formidableHelper.parseInfo(req);
+    var userData = req.userDataPass;
+    userData.devtype = devtype?devtype:userData.devtype;
+    userData.devtoken = devtoken?devtoken:userData.devtoken;
+    
+    if(!devtype || !devtoken){
+      return res.status(200).json({
+        code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+        message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+      });
+    }
+
+    if(devtype !== '0' && devtype !== '1'){
+      return res.status(200).json({
+        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+      });
+    }
+
+    await userData.save();
+    return res.status(200).json({
+      code: statusCode.OK,
+      message: statusMessage.OK,
+      data: {
+        devtype: userData.devtype,
+        devtoken: userData.devtoken
+      }
+    })
+  } catch (error) {
+    console.log(error)
+    if (error.message=="params") {
+      return res.status(500).json({
+        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+      });
+    } else {
+      return res.status(500).json({
+        code: statusCode.UNKNOWN_ERROR,
+        message: statusMessage.UNKNOWN_ERROR,
+      });
+    }
+    
+  }
+};
+
 const getUserInfo = async (req, res) => {
   const { token, user_id } = req.query;
   const { _id } = req.userDataPass;
@@ -514,11 +567,14 @@ const setUserInfo = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   getListPosts,
   checkNewItem,
   getNotification,
   setReadNotification,
+  setDevToken,
   getUserInfo,
   setUserInfo
 };

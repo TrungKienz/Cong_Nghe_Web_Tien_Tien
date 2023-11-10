@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema({
   cover_image: String,
   link: String,
   coins: Number,
+  devtype: String,
+  devtoken: String,
   requestedFriends: [
     {
       author: {
