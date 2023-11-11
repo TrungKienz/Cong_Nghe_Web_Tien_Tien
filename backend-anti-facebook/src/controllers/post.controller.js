@@ -1007,6 +1007,32 @@ const setComment = async (req, res) => {
   }
 };
 
+const search = async (req, res) => {
+  const { token, keyword, index, count } = req.query;
+  const { _id } = req.userDataPass;
+
+  try{
+    if (!token || !_id || !keyword || !index || !count) {
+      throw Error('Missing param');
+    }
+
+    // Normalize the keyword
+    const normalizedKeyword = keyword.toLowerCase();
+
+    // Perform the search operation
+    const results = posts.filter(post =>
+      post.title.toLowerCase().includes(normalizedKeyword) ||
+      post.content.toLowerCase().includes(normalizedKeyword)
+    );
+
+    // Do something with the search results
+      
+  }
+  catch(error){
+    console.error(error);
+  }
+}
+
 module.exports = {
   addPost,
   getPost,
