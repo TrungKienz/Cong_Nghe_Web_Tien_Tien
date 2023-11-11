@@ -1020,7 +1020,7 @@ const search = async (req, res) => {
     const normalizedKeyword = keyword.toLowerCase();
 
     // Perform the search operation
-    const results = posts.filter(post =>
+    const results = post.filter(post =>
       post.title.toLowerCase().includes(normalizedKeyword) ||
       post.content.toLowerCase().includes(normalizedKeyword)
     );
@@ -1043,5 +1043,6 @@ module.exports = {
   like,
   getComment,
   setComment,
-  deletePostAll
+  deletePostAll,
+  search
 };
