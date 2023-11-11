@@ -1009,20 +1009,23 @@ const setComment = async (req, res) => {
 
 const search = async (req, res) => {
   const { token, keyword, index, count } = req.query;
-  const { _id } = req.userDataPass;
+  const { user_id } = req.userDataPass;
 
   try {
-    if (!token || !_id || !keyword || !index || !count) {
-      throw new Error('Missing param');
+    if (!token || !user_id || !keyword || !index || !count) {
+      throw Error('Missing param');
     }
 
     // Normalize the keyword
     const normalizedKeyword = keyword.toLowerCase();
 
     // Perform the search operation
-    const results = await post.find({ normalizedKeyword,described: { $regex: normalizedKeyword, $options: 'i' } })
-      .skip(Number(index))
-      .limit(Number(count));
+    const results = await posts.find({
+      $or: [
+        { normalizedKeyword: { $regex: normalizedKeyword, $options: 'i' } },
+        { described: { $regex: normalizedKeyword, $options: 'i' } }
+      ]
+    });  
 
     // Do something with the search results
 
