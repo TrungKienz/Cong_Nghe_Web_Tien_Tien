@@ -1008,11 +1008,11 @@ const setComment = async (req, res) => {
 };
 
 const search = async (req, res) => {
-  const { token, keyword, index, count } = req.query;
-  const { user_id } = req.userDataPass;
+  const { keyword, index, count } = req.query;
+  const { _id } = req.userDataPass;
 
   try {
-    if (!token || !user_id || !keyword || !index || !count) {
+    if (!_id || !keyword || !index || !count) {
       throw Error('Missing param');
     }
 
