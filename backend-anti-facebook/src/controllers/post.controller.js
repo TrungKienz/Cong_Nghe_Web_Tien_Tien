@@ -1009,7 +1009,11 @@ const setComment = async (req, res) => {
 
 const search = async (req, res) => {
   const { keyword, index, count } = req.query;
-  const { _id } = req.userDataPass;
+  const post_id = req.query._id // post's id
+  const { _id } = req.userDataPass; //user's id
+
+  console.log (post_id)
+  console.log (_id.toString())
 
   try {
     if (!_id || !keyword || !index || !count) {
