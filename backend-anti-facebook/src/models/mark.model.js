@@ -1,13 +1,15 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const commentSchema = new mongoose.Schema({
+const markSchema = new mongoose.Schema({
   poster: { type: Schema.Types.ObjectId, ref: 'user' },// id
   author: { type: Schema.Types.ObjectId, ref: 'user' },
+  mark_id: String,
+  type: Number,
   content: String,
   created: Date,
 });
 
-const comment = mongoose.model("comment", commentSchema);
+const mark = mongoose.model("mark", markSchema);
 
-module.exports = comment;
+module.exports = mark;
