@@ -11,16 +11,23 @@ const addFriend = async (req, res) => {
   const { _id } = req.userDataPass;
   const {user_id} = req.query //target's id
   try {
+    //#region check params
     if (!(user_id !== undefined)) // Check if params are provided
     {
       throw ({code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
         message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing user_id"})
     }
+
+    if (user_id.toString() == _id.toString())
+    {
+      throw ({code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID + " - User cannot send request to themself"})
+    }
     let totalRequestsSent = 0
 
+    //#endregion
 
-
-    //Update user
+    //#region Update user
     const ownerData = await User.findOne({ _id: _id })
     if (!ownerData) //For some reason cannot find user
     {
@@ -49,12 +56,9 @@ const addFriend = async (req, res) => {
       }
     })
     
-
+    //#endregion
  
-
-
-
-    //Update target friend
+    //#region Update target friend
     const targetData = await User.findOne({ _id: user_id })
     if (!targetData) //For some reason cannot find target
     {
@@ -81,10 +85,8 @@ const addFriend = async (req, res) => {
     })
     //targetData.requestedFriends.push(_id) // Save received friend request
     //targetData.requestedFriends.pop()
+    //#endregion
     
-    
-
-
     return res.status(200).json({
       code: statusCode.OK,
       message: statusMessage.OK,
@@ -103,6 +105,8 @@ const getListOfFriendSuggestions = async (req, res) => {
   let {index, count } = req.query;// gửi bằng query params
   //const { _id } = req.userDataPass;
   try {
+
+    //#region params check
     if (!(index !== undefined) || !(count !== undefined)) // Check if params are provided
     {
       throw ({code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
@@ -121,7 +125,9 @@ const getListOfFriendSuggestions = async (req, res) => {
       throw ({code: statusCode.USER_IS_NOT_VALIDATED,
         message: statusMessage.USER_IS_NOT_VALIDATED})
     }
+    //#endregion
 
+    //#region get list of all users
     let newList = []
     //const filter = { settings.}
     const usersData = await User.find().select('username friends').exec();
@@ -141,7 +147,9 @@ const getListOfFriendSuggestions = async (req, res) => {
         newList.push(user)
       }
     });
+    //#endregion
 
+    //#region adjust list with index and count
     newList = shuffle(newList)
 
     if (index > newList.length -1)
@@ -154,6 +162,7 @@ const getListOfFriendSuggestions = async (req, res) => {
 
     count = Math.min(count, newList.length)
     newList = newList.slice(0, count)
+    //#endregion
 
     return res.status(200).json({
       code: statusCode.OK,
@@ -195,6 +204,80 @@ const getListOfFriendRequests = async (req, res) => {
     let user = await User.findOne({ _id: _id })
 
     let arr = user.requestedFriends.toObject()
+    arr.forEach(request => {
+      infoArr.push({
+        _id : request._id.toString(),
+        created :  request.created,
+        //created :  changeTimeZone(request.created, "Asia/Bangkok")
+      })
+    })
+
+    for(i = 0; i < infoArr.length; i++)
+    {
+      let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select('username avatar')
+      _userInfo = _userInfo.toObject()
+      _userInfo.created = infoArr[i].created
+      _userInfo.same_friends = 1 //TODO
+      newList.push(_userInfo)
+    }
+    //#endregion
+    
+    //#region adjust list with index and count
+
+
+    if (index > newList.length -1 && newList.length > 0)
+    {
+      throw ({code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID + " - Provided index is out of range"})
+    }
+
+    newList = newList.slice(index)
+
+    count = Math.min(count, newList.length)
+    newList = newList.slice(0, count)
+    //#endregion
+
+    return res.status(202).json({
+      code: statusCode.OK,
+      message: statusMessage.OK,
+      data: newList,
+    })
+  } catch (error) {
+      return res.status(200).json({
+        code: error.code,
+        message: error.message,
+      })
+  }
+}
+
+const getListOfUserFriends = async (req, res) => {
+  const { _id } = req.userDataPass;
+  let {index, count, user_id } = req.query;
+  //const { _id } = req.userDataPass;
+  try {
+
+    //#region params check
+    if (!(index !== undefined) || !(count !== undefined)) // Check if params are provided
+    {
+      throw ({code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+        message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing index or count"})
+    }
+
+    if (isNaN(+index) || isNaN(count)) // Check if params are of number type
+    {
+      throw ({code: statusCode.PARAMETER_TYPE_IS_INVALID,
+        message: statusMessage.PARAMETER_TYPE_IS_INVALID + " - index or count is not a number"})
+    }
+    //#endregion
+
+    //#region get full list of all users
+    let newList = []
+    let infoArr = []
+
+    let targetId = user_id? user_id : _id //Get friends list from either user or provided user_id
+    let user = await User.findOne({ _id: targetId })
+
+    let arr = user.friends.toObject()
     arr.forEach(request => {
       infoArr.push({
         _id : request._id.toString(),
@@ -427,4 +510,5 @@ module.exports = {
   getListOfFriendSuggestions,
   getListOfFriendRequests,
   processFriendRequest,
+  getListOfUserFriends,
 }
