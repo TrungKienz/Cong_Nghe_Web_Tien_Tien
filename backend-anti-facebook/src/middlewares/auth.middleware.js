@@ -7,10 +7,22 @@ const accessTokenSecret =
   process.env.ACCESS_TOKEN_SECRET || "accessTokenSecret";
 
 const isAuth = async (req, res, next) => {
+<<<<<<< HEAD
   console.log("formdata: ",req.file)
   const tokenFromClient =
   req.query.token || req.body.token || req.headers["x-access-token"];
   console.log("Token", tokenFromClient)
+=======
+  var tokenFromClient =
+    req.body.token || req.query.token || req.headers["x-access-token"] || req.headers["authorization"];
+  console.log("Token: ", tokenFromClient)
+
+  if(tokenFromClient.includes('Bearer')){
+    const arrayToken = tokenFromClient.split(" ");
+    tokenFromClient = arrayToken[1];
+  }
+
+>>>>>>> long09
   if (tokenFromClient) {
     try { 
       // if(tokenFromClient)

@@ -98,22 +98,45 @@ const getListPosts = async (req, res) => {
         e.is_liked= e.like_list.includes(_id);
       })
       
-      // await (resultData.postIds.slice(Number(index),Number(index)+Number(count))).map(element => {
-      //   return res.status(200).json({
-      //     code: statusCode.OK,
-      //     message: statusMessage.OK,
-      //     data: {
-      //       id: element._id,
-      //       name: null, 
-      //       image: element.image,
-      //     }, 
-      //   })
-      // });
-      // console.log(result)
+      var resultArray = [];
+      await (resultData.postIds.slice(Number(index),Number(index)+Number(count))).map(element => {
+        const dataResElement = {
+          post: {
+            id: element._id,
+            name: element.name,
+            image: element.image,
+            video: {
+              url: element.video.url,
+              thumb: null
+            },
+            described: element.described,
+            created: element.created,
+            feel: element.feel,
+            comment_mark: element.comment_mark,
+            is_felt: element.is_felt,
+            is_blocked: element.is_blocked,
+            can_edit: element.can_edit,
+            banned: element.banned,
+            status: element.status,
+            author: {
+              id: element.author.id,
+              username: element.author.username,
+              avatar: element.author.avatar,
+            },
+            new_items: element.new_items,
+            last_id: element.last_id,
+          },
+        }
+        // console.log(element)
+        resultArray.push(dataResElement);
+      });
+
+
+      
       return res.status(200).json({
         code: statusCode.OK,
         message: statusMessage.OK,
-        data: resultData.postIds.slice(Number(index),Number(index)+Number(count)),  
+        data: resultArray,  
       })
     }
 

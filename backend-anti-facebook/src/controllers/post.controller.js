@@ -1011,15 +1011,22 @@ const search = async (req, res) => {
   const { token, keyword, index, count } = req.query;
   const { _id } = req.userDataPass;
 
+<<<<<<< HEAD
   try{
     if (!token || !_id || !keyword || !index || !count) {
       throw Error('Missing param');
+=======
+  try {
+    if (!token || !_id || !keyword || !index || !count) {
+      throw new Error('Missing param');
+>>>>>>> long09
     }
 
     // Normalize the keyword
     const normalizedKeyword = keyword.toLowerCase();
 
     // Perform the search operation
+<<<<<<< HEAD
     const results = post.filter(post =>
       post.title.toLowerCase().includes(normalizedKeyword) ||
       post.content.toLowerCase().includes(normalizedKeyword)
@@ -1032,6 +1039,34 @@ const search = async (req, res) => {
     console.error(error);
   }
 }
+=======
+    const results = await post.find({ normalizedKeyword,described: { $regex: normalizedKeyword, $options: 'i' } })
+      .skip(Number(index))
+      .limit(Number(count));
+
+    // Do something with the search results
+
+    return res.status(200).json({
+      code: statusCode.SUCCESS, 
+      message: statusMessage.SUCCESS,
+      results: results
+    });
+  } catch (error) {
+    console.log(error);
+    if (error.message === 'Missing param') {
+      return res.status(400).json({
+        code: statusCode.BAD_REQUEST,
+        message: statusMessage.BAD_REQUEST
+      });
+    } else {
+      return res.status(500).json({
+        code: statusCode.INTERNAL_SERVER_ERROR,
+        message: statusMessage.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+};
+>>>>>>> long09
 
 module.exports = {
   addPost,
