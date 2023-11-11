@@ -1011,35 +1011,15 @@ const search = async (req, res) => {
   const { token, keyword, index, count } = req.query;
   const { _id } = req.userDataPass;
 
-<<<<<<< HEAD
-  try{
-    if (!token || !_id || !keyword || !index || !count) {
-      throw Error('Missing param');
-=======
   try {
     if (!token || !_id || !keyword || !index || !count) {
       throw new Error('Missing param');
->>>>>>> long09
     }
 
     // Normalize the keyword
     const normalizedKeyword = keyword.toLowerCase();
 
     // Perform the search operation
-<<<<<<< HEAD
-    const results = post.filter(post =>
-      post.title.toLowerCase().includes(normalizedKeyword) ||
-      post.content.toLowerCase().includes(normalizedKeyword)
-    );
-
-    // Do something with the search results
-      
-  }
-  catch(error){
-    console.error(error);
-  }
-}
-=======
     const results = await post.find({ normalizedKeyword,described: { $regex: normalizedKeyword, $options: 'i' } })
       .skip(Number(index))
       .limit(Number(count));
@@ -1066,7 +1046,6 @@ const search = async (req, res) => {
     }
   }
 };
->>>>>>> long09
 
 module.exports = {
   addPost,
