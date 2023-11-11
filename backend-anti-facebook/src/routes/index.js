@@ -11,10 +11,8 @@ const socialRouter = require('./social.route');
 const postRouter = require('./post.route');
 const testRouter = require('./test.route');
 const homeRouter = require('./home.route');
+const commentRouter = require('./comment.route');
 
-
-
-// const articleRouter = require('./Article');
 const cpUpload = upload.fields([
     { name: "image", maxCount: 4 },
     { name: "video", maxCount: 1 },
@@ -31,6 +29,7 @@ const routesArray = [
     { path: '/post', router: postRouter },
     { path: '/test', router: testRouter },
     { path: '/home', router: homeRouter },
+    { path: '/comment', router: commentRouter},
 ];
 
 

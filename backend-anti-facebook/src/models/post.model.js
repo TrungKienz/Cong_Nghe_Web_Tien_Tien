@@ -10,17 +10,17 @@ const postSchema = new mongoose.Schema({
   modified: Date,
   like: Number,
   disappointed: Number,
-  disappointed_list: [{
-    // type: Schema.Types.ObjectId,
-  }],
+  disappointed_list: [{type: Schema.Types.ObjectId,}],
   kudos: Number,
-  kudos_list: [{
-    // type: Schema.Types.ObjectId,
-  }],
+  kudos_list: [{type: Schema.Types.ObjectId,}],
   comment: Number,
   comment_list: [{
     type: Schema.Types.ObjectId,
     ref: "comment",
+  }],
+  mark_list: [{
+    type: Schema.Types.ObjectId,
+    ref: "mark",
   }],
   is_liked: Boolean,
   like_list: [{
@@ -28,16 +28,13 @@ const postSchema = new mongoose.Schema({
     ref: "user",
   }],
   image: [{
-    // id:  Schema.Types.ObjectId,
     url: String,
   }],
   video: {
-    // id:  Schema.Types.ObjectId,
     thumb: String,
     url: String,
   },
   thumb: [{
-    // id:  Schema.Types.ObjectId,
     url: String,
   }],
   // 
