@@ -214,10 +214,12 @@ const getListOfFriendRequests = async (req, res) => {
 
     for(i = 0; i < infoArr.length; i++)
     {
-      let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select('username avatar')
+      let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select('username avatar friends')
+      const same_friends_count = count_same_friends(_userInfo, user)
       _userInfo = _userInfo.toObject()
       _userInfo.created = infoArr[i].created
-      _userInfo.same_friends = 1 //TODO
+      _userInfo.same_friends = same_friends_count 
+      delete _userInfo.friends
       newList.push(_userInfo)
     }
     //#endregion
@@ -288,10 +290,87 @@ const getListOfUserFriends = async (req, res) => {
 
     for(i = 0; i < infoArr.length; i++)
     {
-      let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select('username avatar')
+      let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select('username avatar friends')
+      const same_friends_count = count_same_friends(_userInfo, user)
       _userInfo = _userInfo.toObject()
       _userInfo.created = infoArr[i].created
-      _userInfo.same_friends = 1 //TODO
+      _userInfo.same_friends = same_friends_count 
+      delete _userInfo.friends
+      newList.push(_userInfo)
+    }
+    //#endregion
+    
+    //#region adjust list with index and count
+
+
+    if (index > newList.length -1 && newList.length > 0)
+    {
+      throw ({code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID + " - Provided index is out of range"})
+    }
+
+    newList = newList.slice(index)
+
+    count = Math.min(count, newList.length)
+    newList = newList.slice(0, count)
+    //#endregion
+
+    return res.status(202).json({
+      code: statusCode.OK,
+      message: statusMessage.OK,
+      data: newList,
+    })
+  } catch (error) {
+      return res.status(200).json({
+        code: error.code,
+        message: error.message,
+      })
+  }
+}
+
+const getListOfBlockedUsers = async (req, res) => {
+  const { _id } = req.userDataPass;
+  let {index, count } = req.query;// gửi bằng query params
+  //const { _id } = req.userDataPass;
+  try {
+
+    //#region params check
+    if (!(index !== undefined) || !(count !== undefined)) // Check if params are provided
+    {
+      throw ({code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+        message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing index or count"})
+    }
+
+    if (isNaN(+index) || isNaN(count)) // Check if params are of number type
+    {
+      throw ({code: statusCode.PARAMETER_TYPE_IS_INVALID,
+        message: statusMessage.PARAMETER_TYPE_IS_INVALID + " - index or count is not a number"})
+    }
+    //#endregion
+
+    //#region get full list of all users
+    let newList = []
+    let infoArr = []
+
+    let user = await User.findOne({ _id: _id })
+
+    let arr = user.blockedIds.toObject()
+    arr.forEach(request => {
+      infoArr.push({
+        _id : request._id.toString(),
+        created :  request.created,
+        //created :  changeTimeZone(request.created, "Asia/Bangkok")
+      })
+    })
+
+    for(i = 0; i < infoArr.length; i++)
+    {
+      let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select('username avatar friends')
+      const same_friends_count = count_same_friends(_userInfo, user)
+      _userInfo = _userInfo.toObject()
+      _userInfo.created = infoArr[i].created
+      _userInfo.same_friends = same_friends_count 
+      delete _userInfo.friends
       newList.push(_userInfo)
     }
     //#endregion
@@ -511,4 +590,5 @@ module.exports = {
   getListOfFriendRequests,
   processFriendRequest,
   getListOfUserFriends,
+  getListOfBlockedUsers,
 }

@@ -8,5 +8,6 @@ router.post("/set_request_friend", isAuth, controller.addFriend);
 router.post("/get_requested_friends", isAuth, controller.getListOfFriendRequests);
 router.post("/get_user_friends", isAuth, controller.getListOfUserFriends);
 router.post("/set_accept_friend", isAuth, controller.processFriendRequest);
+router.post("/get_list_blocks", isAuth, controller.getListOfBlockedUsers);
 
 module.exports = router;
