@@ -115,7 +115,56 @@ const changeInfoAfterSignup = async (req, res) => {
 
 
 };
+
+const changePassword = async (req, res) => {
+  const { token, password, new_password } = req.body;
+
+  try {
+    if (!token || !password || !new_password) {
+      throw Error('Missing parameter');
+    }
+
+    // Check if the token is valid and retrieve the user data
+    const user = await Users.findOne({ token });
+
+    if (!user) {
+      throw Error('Invalid token');
+    }
+
+    // Verify the current password
+    const isPasswordValid = await users.comparePassword(password);
+
+    if (!isPasswordValid) {
+      throw new Error('Invalid password');
+    }
+
+    // Update the password
+    users.password = new_password;
+    await users.save();
+
+    return res.status(200).json({
+      code: statusCode.SUCCESS,
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    console.log(error);
+    if (error.message === 'Missing parameter' || error.message === 'Invalid token' || error.message === 'Invalid password') {
+      return res.status(400).json({
+        code: statusCode.BAD_REQUEST,
+        message: error.message
+      });
+    } else {
+      return res.status(500).json({
+        code: statusCode.INTERNAL_SERVER_ERROR,
+        message: statusMessage.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+};
+
+
 module.exports = {
   logout,
   changeInfoAfterSignup,
+  changePassword
 }
