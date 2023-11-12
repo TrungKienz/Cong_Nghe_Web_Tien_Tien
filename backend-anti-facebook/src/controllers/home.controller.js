@@ -310,15 +310,38 @@ const getNotification = async (req, res) => {
     index=index?index:0; 
     count=count?count:20;
     
-    var userData = await User.findById(_id).populate({
-      path: "notifications.id",
+    var resultData = await User.findById(_id).populate({
+      path: "notificationsIds",
       
       // select: "username avatar",
     });
+    
+    var resultArray = [];
+    await (resultData.notificationsIds.sort((a,b)=>b.id.created-a.id.created).slice(Number(index),Number(index)+Number(count))).map(element => {
+      const dataResElement = {
+        notification: {
+          type: element.type ? element.type: null,
+          object_id: element.object_id ? element.object_id: null,
+          title: element.title ? element.title: null,
+          notification_id: element.notification_id ? element.notification_id: null,
+          created: element.created ? element.created: null,
+          avatar: element.avatar ? element.avatar: null,
+          group: element.group ? element.group: null,
+          read: element.read ? element.read: null,
+        },
+      }
+      // console.log(element)
+      resultArray.push(dataResElement);
+    });
+    
     return res.status(200).json({
       code: statusCode.OK,
       message: statusMessage.OK,
-      data: userData.notifications.sort((a,b)=>b.id.created-a.id.created).slice(Number(index),Number(index)+Number(count)),
+      data: {
+        notification: resultArray,
+        last_update: null,
+        badge: null, 
+      },
     });
   } catch (error) {
     return res.status(500).json({
