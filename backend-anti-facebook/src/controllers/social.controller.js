@@ -113,7 +113,7 @@ const getListOfFriendSuggestions = async (req, res) => {
         message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing index or count"})
     }
 
-    if (isNaN(+index) || isNaN(count)) // Check if params are of number type
+    if (isNaN(+index) || isNaN(+count)) // Check if params are of number type
     {
       throw ({code: statusCode.PARAMETER_TYPE_IS_INVALID,
         message: statusMessage.PARAMETER_TYPE_IS_INVALID + " - index or count is not a number"})
@@ -190,7 +190,7 @@ const getListOfFriendRequests = async (req, res) => {
         message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing index or count"})
     }
 
-    if (isNaN(+index) || isNaN(count)) // Check if params are of number type
+    if (isNaN(+index) || isNaN(+count)) // Check if params are of number type
     {
       throw ({code: statusCode.PARAMETER_TYPE_IS_INVALID,
         message: statusMessage.PARAMETER_TYPE_IS_INVALID + " - index or count is not a number"})
@@ -265,7 +265,7 @@ const getListOfUserFriends = async (req, res) => {
         message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing index or count"})
     }
 
-    if (isNaN(+index) || isNaN(count)) // Check if params are of number type
+    if (isNaN(+index) || isNaN(+count)) // Check if params are of number type
     {
       throw ({code: statusCode.PARAMETER_TYPE_IS_INVALID,
         message: statusMessage.PARAMETER_TYPE_IS_INVALID + " - index or count is not a number"})
@@ -341,7 +341,7 @@ const getListOfBlockedUsers = async (req, res) => {
         message: statusMessage.PARAMETER_IS_NOT_ENOUGHT + " - Missing index or count"})
     }
 
-    if (isNaN(+index) || isNaN(count)) // Check if params are of number type
+    if (isNaN(+index) || isNaN(+count)) // Check if params are of number type
     {
       throw ({code: statusCode.PARAMETER_TYPE_IS_INVALID,
         message: statusMessage.PARAMETER_TYPE_IS_INVALID + " - index or count is not a number"})
@@ -501,7 +501,7 @@ const processFriendRequest = async (req, res) => {
   }
 }
 
-//Common functions
+//#region Common functions
 
 function count_same_friends(user1, user2) //returns an int
 {
@@ -583,6 +583,8 @@ function changeTimeZone(date, timeZone) { // returns a Date() object
     }),
   );
 }
+
+//#endregion
 
 module.exports = {
   addFriend,
