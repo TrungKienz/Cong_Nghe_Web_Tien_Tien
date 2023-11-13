@@ -6,7 +6,8 @@
     "scripts": {
         "dev": "nodemon --inspect ./index.js 3000",
         "start": "node ./index.js 3000",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "format_code": "prettier . --write"
     },
     "keywords": [],
     "author": "",
