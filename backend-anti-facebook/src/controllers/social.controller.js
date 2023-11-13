@@ -592,4 +592,5 @@ module.exports = {
     getListOfFriendRequests,
     processFriendRequest,
     getListOfUserFriends,
+    getListOfBlockedUsers,
 };
