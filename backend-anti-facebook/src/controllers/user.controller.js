@@ -4,6 +4,7 @@ const User = require("../models/user.model.js");
 const cloudHelper = require("../helpers/cloud.helper.js");
 const statusCode = require("./../constants/statusCode.constant.js");
 const statusMessage = require("./../constants/statusMessage.constant.js");
+const md5 = require("md5");
 
 const logout = async (req, res) => {
   const { token } = req.query;
@@ -118,19 +119,19 @@ const changeInfoAfterSignup = async (req, res) => {
 
 const changePassword = async (req, res) => {
   const { token, password, new_password } = req.query;
-
+  const { _id } = req.userDataPass;
   try {
     if (!token || !password || !new_password) {
       throw Error('Missing parameter');
     } else {
-      const userData = await User.findOne({ token });
+      const userData = await User.findOne({ _id });
         if (userData) {
           // tìm được user có trong hệ thống
           const hashedPassword = md5(password);// mã hoá password
           if (hashedPassword == userData.password) {
             // kiểm tra password
             User.findOneAndUpdate(
-                { token: userData.token },
+                { token },
                 {
                   $set: {
                     password: md5(new_password),

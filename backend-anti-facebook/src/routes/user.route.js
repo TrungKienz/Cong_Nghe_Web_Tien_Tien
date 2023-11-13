@@ -9,6 +9,6 @@ router.get("/", (req, res) => {// test private page
 });
 router.post("/logout", isAuth, afterLogin.logout);
 router.post("/change_info_after_signup", isAuth, afterLogin.changeInfoAfterSignup);
-router.post("/changePassword", isAuth, afterLogin.changePassword);
+router.post("/changePassword",isAuth, afterLogin.changePassword);
 
 module.exports = router;
