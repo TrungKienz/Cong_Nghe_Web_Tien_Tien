@@ -233,7 +233,7 @@ const setMarkComment = async (req, res) => {
                     select: '_id avatar username',
                 },
             })
-
+            // Kệ cho Hùng code ở đây
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,

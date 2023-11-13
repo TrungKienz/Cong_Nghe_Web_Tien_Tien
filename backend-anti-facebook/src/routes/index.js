@@ -12,6 +12,7 @@ const postRouter = require('./post.route')
 const testRouter = require('./test.route')
 const homeRouter = require('./home.route')
 const commentRouter = require('./comment.route')
+const chatRouter = require('./chat.route')
 
 const cpUpload = upload.fields([
     { name: 'image', maxCount: 4 },
@@ -30,6 +31,7 @@ const routesArray = [
     { path: '/test', router: testRouter },
     { path: '/home', router: homeRouter },
     { path: '/comment', router: commentRouter },
+    { path: '/chat', router: chatRouter },
 ]
 
 function routes(app) {
