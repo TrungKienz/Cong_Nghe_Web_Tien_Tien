@@ -117,30 +117,60 @@ const changeInfoAfterSignup = async (req, res) => {
 };
 
 const changePassword = async (req, res) => {
-  const { token, password, new_password } = req.body;
+  const { token, password, new_password } = req.query;
 
   try {
     if (!token || !password || !new_password) {
       throw Error('Missing parameter');
+    } else {
+      const userData = await User.findOne({ token });
+        if (userData) {
+          // tìm được user có trong hệ thống
+          const hashedPassword = md5(password);// mã hoá password
+          if (hashedPassword == userData.password) {
+            // kiểm tra password
+            User.findOneAndUpdate(
+                { token: userData.token },
+                {
+                  $set: {
+                    password: md5(new_password),
+                  },
+                });
+            return res.status(200).json({
+              code: statusCode.OK,
+              message: statusMessage.OK,
+              data: {
+                id: userData._id,
+                username: userData.email,
+                coins: userData.coins,
+              },
+            });
+          } else {
+            // password không hợp lệ
+            console.log("password không hợp lệ")
+            return res.status(200).json({
+              code: statusCode.USER_IS_NOT_VALIDATED,
+              message: statusMessage.USER_IS_NOT_VALIDATED,
+            });
+          }
+        } else {
+          // phonenumber chưa được đăng kí
+          console.log("email chưa được đăng kí")
+          res.status(200).json({
+            code: statusCode.USER_IS_NOT_VALIDATED,
+            message: statusMessage.USER_IS_NOT_VALIDATED,
+        
+          });
+        }
     }
 
-    // Check if the token is valid and retrieve the user data
-    const user = await Users.findOne({ token });
+  
 
-    if (!user) {
-      throw Error('Invalid token');
-    }
-
-    // Verify the current password
-    const isPasswordValid = await users.comparePassword(password);
-
-    if (!isPasswordValid) {
-      throw new Error('Invalid password');
-    }
+    
 
     // Update the password
-    users.password = new_password;
-    await users.save();
+    User.password = md5(new_password);
+    await User.save();
 
     return res.status(200).json({
       code: statusCode.SUCCESS,
