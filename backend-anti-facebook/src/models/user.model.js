@@ -1,6 +1,6 @@
 // Cấu hình models tương ứng
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 const userSchema = new mongoose.Schema({
     phonenumber: String,
     verifyCode: Number,
@@ -101,8 +101,8 @@ const userSchema = new mongoose.Schema({
             ref: 'user',
         },
     ],
-})
+});
 
-const User = mongoose.model('user', userSchema)
+const User = mongoose.model('user', userSchema);
 
-module.exports = User
+module.exports = User;

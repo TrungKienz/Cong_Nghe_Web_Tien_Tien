@@ -587,10 +587,9 @@ function changeTimeZone(date, timeZone) { // returns a Date() object
 //#endregion
 
 module.exports = {
-  addFriend,
-  getListOfFriendSuggestions,
-  getListOfFriendRequests,
-  processFriendRequest,
-  getListOfUserFriends,
-  getListOfBlockedUsers,
-}
+    addFriend,
+    getListOfFriendSuggestions,
+    getListOfFriendRequests,
+    processFriendRequest,
+    getListOfUserFriends,
+};
