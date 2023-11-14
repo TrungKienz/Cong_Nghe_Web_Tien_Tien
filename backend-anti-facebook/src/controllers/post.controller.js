@@ -1087,7 +1087,9 @@ const search = async (req, res) => {
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: postData1
+            data: {
+                postData1
+            }
         })
         await User.findByIdAndUpdate(_id,{
             $pull:{
