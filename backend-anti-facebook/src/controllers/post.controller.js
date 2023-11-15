@@ -1195,7 +1195,6 @@ const search = async (req, res) => {
     try {
         index = index ? index : 0;
         count = count ? count : 20;
-        console.log(user_id === _id.toString());
         if (_id.toString() !== user_id) {
             throw Error("params");
         }
@@ -1219,7 +1218,7 @@ const search = async (req, res) => {
             data: {
               id: _id,
               author:{
-                name: postData1.username
+              
               }
               
             }
