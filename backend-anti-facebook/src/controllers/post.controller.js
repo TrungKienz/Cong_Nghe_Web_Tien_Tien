@@ -234,7 +234,7 @@ const getPost = async (req, res) => {
           // data: result,
           data: {
             id: result._id,
-            name: null,
+            name: result.author.username,
             created: result.created,
             described: result.described,
             modified: result.modified,
@@ -250,7 +250,7 @@ const getPost = async (req, res) => {
             })),
             author: {
               id: resultUser._id,
-              name: resultUser.name,
+              name: resultUser.username,
               avatar: resultUser.avatar,
               coins: resultUser.coins,
               listing: resultUser.postIds.map((postId) => ({
@@ -368,6 +368,7 @@ const getPost = async (req, res) => {
         message: statusMessage.POST_IS_NOT_EXISTED,
       });
     } else {
+      console.log(error);
       return res.status(200).json({
         code: statusCode.UNKNOWN_ERROR,
         message: statusMessage.UNKNOWN_ERROR,
@@ -1215,7 +1216,13 @@ const search = async (req, res) => {
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: postData1
+            data: {
+              id: _id,
+              author:{
+                name: postData1.username
+              }
+              
+            }
 
             
         })
