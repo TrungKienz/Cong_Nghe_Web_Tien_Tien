@@ -11,11 +11,10 @@ import Notification from '../models/notification.model';
 
 const addNotification = async (data) => {
     var typeNoti = data.type;
-    if(typeNoti === 'post') {
-        
-    }
+    typeNoti === "post" ? typeNoti = "post":
+    typeNoti === "comment" ? typeNoti = "comment" : null;
     var newNotification = await new Notification({
-        type: data.type || null,
+        type: typeNoti,
         object_id: data.notificationId || null,
         title: data.username + ' đã thêm một bài viết mới' || null,
         notification_id: data.notificationId || null,
