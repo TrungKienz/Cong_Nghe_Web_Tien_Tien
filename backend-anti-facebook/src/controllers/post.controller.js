@@ -1181,19 +1181,21 @@ const delSavedSearch = async (req, res) => {
 
 */
 const search = async (req, res) => {
-    var { token, keyword, index, count } = req.query;
+    var { token, keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
     // check params
-    if(!_id || !keyword || !index || !count){
+    if(!user_id || !keyword || !index || !count){
         return res.status(200).json({
             code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
             message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
         });
     }
+    
     try {
         index = index ? index : 0;
         count = count ? count : 20;
-        if (!keyword || !_id || !token) {
+        console.log(user_id === _id.toString());
+        if (_id.toString() !== user_id) {
             throw Error("params");
         }
         // var savedSearchList = req.userDataPass.
