@@ -83,7 +83,7 @@ const userSchema = new mongoose.Schema({
     conversations: [
         {
             type: Schema.Types.ObjectId,
-            ref: 'chat',
+            ref: 'conversation',
         },
     ],
     notifications: [
