@@ -1195,16 +1195,9 @@ const search = async (req, res) => {
     try {
         index = index ? index : 0;
         count = count ? count : 20;
-        if (_id.toString() !== user_id) {
+        if (_id.toString() !== user_id || keyword == '') {
             throw Error("params");
         }
-        // var savedSearchList = req.userDataPass.
-        
-        // mo ta
-        // 
-        // Ưu tiên đứng đầu danh sách là các kết quả có chứa đủ các từ và đúng thứ tự
-        // var postData1 =await Post.find({ described: new RegExp(keyword, "i") });
-        // Tiếp theo là các kết quả đủ từ nhưng không đúng thứ tự
         var postData1 =await Post.find({$or: [
             { keyword: new RegExp(keyword, "i") },
             { keyword: new RegExp(keyword.replace(" ", "|"), "i") }

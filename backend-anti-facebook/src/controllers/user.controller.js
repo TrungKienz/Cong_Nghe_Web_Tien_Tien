@@ -117,7 +117,7 @@ const changeInfoAfterSignup = async (req, res) => {
 
 };
 
-const changePassword = async (req, res) => {
+/* const changePassword = async (req, res) => {
   const { token, password, new_password } = req.query;
   const { _id } = req.userDataPass;
   try {
@@ -192,6 +192,63 @@ const changePassword = async (req, res) => {
     }
   }
 };
+ */
+const change_password = async (req, res) => {
+  let { password, new_password } = req.query;
+  const { _id } = req.userDataPass;
+  try {
+    const user = req.userDataPass;
+    if (
+      !new_password ||
+      new_password.length < 6 ||
+      new_password.length > 10 ||
+      new_password.match(/[^a-z|A-Z|0-9]/g)
+    )
+      throw Error("NEW_PASSWORD_VALUE_IS_INVALID");
+
+    if (password == new_password) throw Error("PARAMETER_VALUE_IS_INVALID");
+
+    let count = 0;
+    // chưa check xâu con chung dài nhất 80%
+
+    password = md5(password);
+    if (password != user.password) throw Error("OLD_PASSWORD_VALUE_IS_INVALID");
+
+    //đã thoả mãn các điều kiện
+
+    new_password = md5(new_password);
+    user.password = new_password;
+    await user.save();
+
+    return res.status(200).json({
+      code: statusCode.OK,
+      message: statusMessage.OK,
+    });
+  } catch (error) {
+    console.log(error.message);
+    if (error.message == "PARAMETER_VALUE_IS_INVALID")
+      return res.status(200).json({
+        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+      });
+    else if (error.message == "OLD_PASSWORD_VALUE_IS_INVALID")
+      return res.status(200).json({
+        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: "OLD_PASSWORD_VALUE_IS_INVALID",
+      });
+    else if (error.message == "NEW_PASSWORD_VALUE_IS_INVALID")
+      return res.status(200).json({
+        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: "NEW_PASSWORD_VALUE_IS_INVALID",
+      });
+    else
+      return res.status(200).json({
+        code: statusCode.UNKNOWN_ERROR,
+        message: statusMessage.UNKNOWN_ERROR,
+      });
+  }
+};
+
 
 /*
 const setBlock = async (req, res) => {
@@ -292,61 +349,7 @@ const setBlock = async (req, res) => {
   }
 };
 
-const change_password = async (req, res) => {
-  let { password, new_password } = req.query;
-  const { _id } = req.userDataPass;
-  try {
-    const user = req.userDataPass;
-    if (
-      !new_password ||
-      new_password.length < 6 ||
-      new_password.length > 10 ||
-      new_password.match(/[^a-z|A-Z|0-9]/g)
-    )
-      throw Error("NEW_PASSWORD_VALUE_IS_INVALID");
 
-    if (password == new_password) throw Error("PARAMETER_VALUE_IS_INVALID");
-
-    let count = 0;
-    // chưa check xâu con chung dài nhất 80%
-
-    password = md5(password);
-    if (password != user.password) throw Error("OLD_PASSWORD_VALUE_IS_INVALID");
-
-    //đã thoả mãn các điều kiện
-
-    new_password = md5(new_password);
-    user.password = new_password;
-    await user.save();
-
-    return res.status(200).json({
-      code: statusCode.OK,
-      message: statusMessage.OK,
-    });
-  } catch (error) {
-    console.log(error.message);
-    if (error.message == "PARAMETER_VALUE_IS_INVALID")
-      return res.status(200).json({
-        code: statusCode.PARAMETER_VALUE_IS_INVALID,
-        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-      });
-    else if (error.message == "OLD_PASSWORD_VALUE_IS_INVALID")
-      return res.status(200).json({
-        code: statusCode.PARAMETER_VALUE_IS_INVALID,
-        message: "OLD_PASSWORD_VALUE_IS_INVALID",
-      });
-    else if (error.message == "NEW_PASSWORD_VALUE_IS_INVALID")
-      return res.status(200).json({
-        code: statusCode.PARAMETER_VALUE_IS_INVALID,
-        message: "NEW_PASSWORD_VALUE_IS_INVALID",
-      });
-    else
-      return res.status(200).json({
-        code: statusCode.UNKNOWN_ERROR,
-        message: statusMessage.UNKNOWN_ERROR,
-      });
-  }
-};
 
 const getPushSettings = async (req, res) => {
   // const { token } = req.query;
@@ -511,5 +514,5 @@ const checkNewVersion = async (req, res)=>{
 module.exports = {
   logout,
   changeInfoAfterSignup,
-  changePassword
+  change_password
 }
