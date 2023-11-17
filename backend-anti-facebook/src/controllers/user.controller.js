@@ -117,82 +117,6 @@ const changeInfoAfterSignup = async (req, res) => {
 
 };
 
-/* const changePassword = async (req, res) => {
-  const { token, password, new_password } = req.query;
-  const { _id } = req.userDataPass;
-  try {
-    if (!token || !password || !new_password) {
-      throw Error('Missing parameter');
-    } else {
-      const userData = await User.findOne({ _id });
-        if (userData) {
-          // tìm được user có trong hệ thống
-          const hashedPassword = md5(password);// mã hoá password
-          if (hashedPassword == userData.password) {
-            // kiểm tra password
-            User.findOneAndUpdate(
-                { token },
-                {
-                  $set: {
-                    password: md5(new_password),
-                  },
-                });
-            return res.status(200).json({
-              code: statusCode.OK,
-              message: statusMessage.OK,
-              data: {
-                id: userData._id,
-                username: userData.email,
-                coins: userData.coins,
-              },
-            });
-          } else {
-            // password không hợp lệ
-            console.log("password không hợp lệ")
-            return res.status(200).json({
-              code: statusCode.USER_IS_NOT_VALIDATED,
-              message: statusMessage.USER_IS_NOT_VALIDATED,
-            });
-          }
-        } else {
-          // phonenumber chưa được đăng kí
-          console.log("email chưa được đăng kí")
-          res.status(200).json({
-            code: statusCode.USER_IS_NOT_VALIDATED,
-            message: statusMessage.USER_IS_NOT_VALIDATED,
-        
-          });
-        }
-    }
-
-  
-
-    
-
-    // Update the password
-    User.password = md5(new_password);
-    await User.save();
-
-    return res.status(200).json({
-      code: statusCode.SUCCESS,
-      message: 'Password updated successfully'
-    });
-  } catch (error) {
-    console.log(error);
-    if (error.message === 'Missing parameter' || error.message === 'Invalid token' || error.message === 'Invalid password') {
-      return res.status(400).json({
-        code: statusCode.BAD_REQUEST,
-        message: error.message
-      });
-    } else {
-      return res.status(500).json({
-        code: statusCode.INTERNAL_SERVER_ERROR,
-        message: statusMessage.INTERNAL_SERVER_ERROR
-      });
-    }
-  }
-};
- */
 const change_password = async (req, res) => {
   let { password, new_password } = req.query;
   const { _id } = req.userDataPass;
@@ -249,110 +173,8 @@ const change_password = async (req, res) => {
   }
 };
 
-
-/*
-const setBlock = async (req, res) => {
-  let { token, user_id, type } = req.query;
-  const { _id } = req.userDataPass;
-
-  try {
-    type=Number(type);
-    //kiểm tra tham số đầu vào
-    if (user_id == _id || (type != 0 && type != 1)) {
-      console.log("trùng user_id hoặc type không đúng");
-      throw Error("params");
-    }
-    // tìm user bị block
-    var friendData = await User.findById(user_id);
-    if (!friendData || friendData.is_blocked) {
-      console.log("friend không tìm thấy hoặc đã bị server block");
-      throw Error("action");
-    }
-    // OK
-    var userData = req.userDataPass;
-    var isBlocked = userData.blockedIds.includes(user_id);
-    if (type == 0 && isBlocked) {
-      //block và đã block r
-      throw Error("blockedbefore");
-    }
-    if (type == 0 && !isBlocked) {
-      await User.findByIdAndUpdate(_id, {
-        $push: {
-          blockedIds: user_id,
-        },
-        $pull: {
-          friends: user_id,
-          sendRequestedFriends: {
-            receiver: user_id,
-          },
-          requestedFriends: {
-            author: user_id,
-          },
-        },
-      });
-      await User.findByIdAndUpdate(user_id, {
-        $pull: {
-          friends: _id,
-          sendRequestedFriends: {
-            receiver: _id,
-          },
-          requestedFriends: {
-            author: _id,
-          },
-        },
-      });
-      return res.status(200).json({
-        code: statusCode.OK,
-        message: statusMessage.OK,
-      });
-    }
-    if (type == 1 && !isBlocked) {
-      // unblock và chưa block
-      throw Error("unblockedbefore");
-    }
-    if (type == 1 && isBlocked) {
-      await User.findByIdAndUpdate(_id, {
-        $pull: {
-          blockedIds: user_id,
-        },
-      });
-      return res.status(200).json({
-        code: statusCode.OK,
-        message: statusMessage.OK,
-      });
-    }
-  } catch (error) {
-    if (error.massage == "params") {
-      return res.status(500).json({
-        code: statusCode.PARAMETER_VALUE_IS_INVALID,
-        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-      });
-    } else if (
-      error.massage == "blockedbefore" ||
-      error.message == "unblockedbefore"
-    ) {
-      return res.status(500).json({
-        code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-        message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-      });
-    } else if (error.massage == "action") {
-      return res.status(500).json({
-        code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-        message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-      });
-    } else {
-      return res.status(500).json({
-        code: statusCode.UNKNOWN_ERROR,
-        message: statusMessage.UNKNOWN_ERROR,
-      });
-    }
-  }
-};
-
-
-
 const getPushSettings = async (req, res) => {
-  // const { token } = req.query;
+  const { token } = req.query;
   const { _id } = req.userDataPass;
   try {
     var userData = req.userDataPass;
@@ -469,6 +291,104 @@ const setPushSettings = async (req, res) => {
   }
 };
 
+const setBlock = async (req, res) => {
+  let { token, user_id, type } = req.query;
+  const { _id } = req.userDataPass;
+
+  try {
+    type=Number(type);
+    //kiểm tra tham số đầu vào
+    if (user_id == _id || (type != 0 && type != 1)) {
+      console.log("trùng user_id hoặc type không đúng");
+      throw Error("params");
+    }
+    // tìm user bị block
+    var friendData = await User.findById(user_id);
+    if (!friendData || friendData.is_blocked) {
+      console.log("friend không tìm thấy hoặc đã bị server block");
+      throw Error("action");
+    }
+    // OK
+    var userData = req.userDataPass;
+    var isBlocked = userData.blockedIds.includes(user_id);
+    if (type == 0 && isBlocked) {
+      //block và đã block r
+      throw Error("blockedbefore");
+    }
+    if (type == 0 && !isBlocked) {
+      await User.findByIdAndUpdate(_id, {
+        $push: {
+          blockedIds: user_id,
+        },
+        $pull: {
+          friends: user_id,
+          sendRequestedFriends: {
+            receiver: user_id,
+          },
+          requestedFriends: {
+            author: user_id,
+          },
+        },
+      });
+      await User.findByIdAndUpdate(user_id, {
+        $pull: {
+          friends: _id,
+          sendRequestedFriends: {
+            receiver: _id,
+          },
+          requestedFriends: {
+            author: _id,
+          },
+        },
+      });
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: statusMessage.OK,
+      });
+    }
+    if (type == 1 && !isBlocked) {
+      // unblock và chưa block
+      throw Error("unblockedbefore");
+    }
+    if (type == 1 && isBlocked) {
+      await User.findByIdAndUpdate(_id, {
+        $pull: {
+          blockedIds: user_id,
+        },
+      });
+      return res.status(200).json({
+        code: statusCode.OK,
+        message: statusMessage.OK,
+      });
+    }
+  } catch (error) {
+    if (error.massage == "params") {
+      return res.status(500).json({
+        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+      });
+    } else if (
+      error.massage == "blockedbefore" ||
+      error.message == "unblockedbefore"
+    ) {
+      return res.status(500).json({
+        code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+        message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+      });
+    } else if (error.massage == "action") {
+      return res.status(500).json({
+        code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+        message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+      });
+    } else {
+      return res.status(500).json({
+        code: statusCode.UNKNOWN_ERROR,
+        message: statusMessage.UNKNOWN_ERROR,
+      });
+    }
+  }
+};
+/*
 const checkNewVersion = async (req, res)=>{
   const {token, last_update}= req.query;
   const {_id}= req.userDataPass;
@@ -508,11 +428,15 @@ const checkNewVersion = async (req, res)=>{
     }
   }
 }
+*/
 
-*/ 
+
 
 module.exports = {
   logout,
   changeInfoAfterSignup,
-  change_password
+  change_password,
+  getPushSettings,
+  setPushSettings,
+  setBlock
 }
