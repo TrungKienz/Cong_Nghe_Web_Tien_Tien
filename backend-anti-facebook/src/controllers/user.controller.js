@@ -1,10 +1,11 @@
 // Cấu hình từng controller tương ứng
 const User = require('../models/user.model.js');
-
+const Version = require('../models/version.model.js');
 const cloudHelper = require('../helpers/cloud.helper.js');
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
 const md5 = require('md5');
+
 
 const logout = async (req, res) => {
     const { token } = req.query;
@@ -392,48 +393,46 @@ const setBlock = async (req, res) => {
         }
     }
 };
-/*
+
 const checkNewVersion = async (req, res)=>{
-  const {token, last_update}= req.query;
-  const {_id}= req.userDataPass;
-  try {
-    if (!last_update) {
-      throw Error("params")
-    }
-    var versionData = await Version.find({}).sort({created: 1});
-
-
-    return res.status(200).json({
-      code: statusCode.OK,
-      message: statusMessage.OK,
-      data:{
-        version: versionData[0],
-        user:{
-          id: _id,
-          _id: _id,
-        },
-        badge: "thong bao chua doc",
-        unread_message: "tin nhan chua doc",
-        now: "chi so phien ban"
+    const {token, last_update}= req.query;
+    const {_id, active}= req.userDataPass;
+    try {
+      if (!last_update) {
+        throw Error("params")
       }
-    })
+      var versionData = await Version.find({}).sort({created: 1});
     
-  } catch (error) {
-    if (error.message=="params") {
+  
       return res.status(200).json({
-        code: statusCode.UNKNOWN_ERROR,
-        message: statusMessage.UNKNOWN_ERROR
+        code: statusCode.OK,
+        message: statusMessage.OK,
+        data:{
+          version: versionData[0],
+          user:{
+            id: _id,
+            active: active,
+          },
+          badge: "thong bao chua doc",
+          unread_message: "tin nhan chua doc",
+          now: "chi so phien ban"
+        }
       })
-    } else {
-      return res.status(200).json({
-        code: statusCode.UNKNOWN_ERROR,
-        message: statusMessage.UNKNOWN_ERROR
-      })
+      
+    } catch (error) {
+      if (error.message=="params") {
+        return res.status(200).json({
+          code: statusCode.UNKNOWN_ERROR,
+          message: statusMessage.UNKNOWN_ERROR
+        })
+      } else {
+        return res.status(200).json({
+          code: statusCode.UNKNOWN_ERROR,
+          message: statusMessage.UNKNOWN_ERROR
+        })
+      }
     }
   }
-}
-*/
-
 module.exports = {
     logout,
     changeInfoAfterSignup,
@@ -441,4 +440,5 @@ module.exports = {
     getPushSettings,
     setPushSettings,
     setBlock,
+    checkNewVersion
 };
