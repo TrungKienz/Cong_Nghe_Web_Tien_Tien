@@ -1,4 +1,3 @@
-
 /* Trong trường data cần phải có các trường như sau: 
 - type: Kiểu notification
 - object_id: Phục vụ cho việc chuyển màn hình (id của bài viết)
@@ -11,8 +10,7 @@ import Notification from '../models/notification.model';
 
 const addNotification = async (data) => {
     var typeNoti = data.type;
-    if(typeNoti === 'post') {
-        
+    if (typeNoti === 'post') {
     }
     var newNotification = await new Notification({
         type: data.type || null,
@@ -25,9 +23,9 @@ const addNotification = async (data) => {
         read: '0',
         lastUpdate: data.lastUpdate,
         userId: _id,
-    }).save()
+    }).save();
 
     return newNotification;
-}
+};
 
 module.export = addNotification;

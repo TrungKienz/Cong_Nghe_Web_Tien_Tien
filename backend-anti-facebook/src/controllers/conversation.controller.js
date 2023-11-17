@@ -18,12 +18,11 @@ const chat = async (req, res) => {
         const partnerData = await User.findOne({ _id: partner_id });
         const existingConversation = await Conversation.findOne({
             $or: [
-              { partner_id: [partner_id, _id] },
-              { partner_id: [_id, partner_id] }
-            ]
-          });
-          
-        
+                { partner_id: [partner_id, _id] },
+                { partner_id: [_id, partner_id] },
+            ],
+        });
+
         if (existingConversation) {
             // Update existing conversation with a new message
             existingConversation.conversation.push({
@@ -37,12 +36,14 @@ const chat = async (req, res) => {
             // Create a new conversation
             const newConversation = await new Conversation({
                 partner_id: [partner_id, _id],
-                conversation: [{
-                    message,
-                    unread: 1,
-                    created: Date.now(),
-                    sender: _id,
-                }],
+                conversation: [
+                    {
+                        message,
+                        unread: 1,
+                        created: Date.now(),
+                        sender: _id,
+                    },
+                ],
                 unread: 1,
                 created: Date.now(),
                 is_blocked: 0,
@@ -70,7 +71,6 @@ const chat = async (req, res) => {
     }
 };
 
-
 const getConversation = async (req, res) => {
     try {
         const { partner_id, conversation_id, index, count } = req.query;
@@ -88,32 +88,45 @@ const getConversation = async (req, res) => {
                 throw new Error('nodata');
             }
 
-            const dataResConversation = chatData.conversation.map((conversationElement) => {
-                const message_id = conversationElement._id ? conversationElement._id : null;
-            
-                const senderId = conversationElement.sender._id ? conversationElement.sender._id : null;
-                const senderUsername = conversationElement.sender.username ? conversationElement.sender.username : null;
-                const senderAvatar = conversationElement.sender.avatar ? conversationElement.sender.avatar : null;
+            const dataResConversation = chatData.conversation.map(
+                (conversationElement) => {
+                    const message_id = conversationElement._id
+                        ? conversationElement._id
+                        : null;
 
-                return {
-                    message: conversationElement.message,
-                    message_id: message_id,
-                    unread: conversationElement.unread,
-                    created: conversationElement.created,
-                    sender: {
-                        id: senderId,
-                        username: senderUsername,
-                        avatar: senderAvatar,
-                    },
-                };
-            });
-            
+                    const senderId = conversationElement.sender._id
+                        ? conversationElement.sender._id
+                        : null;
+                    const senderUsername = conversationElement.sender.username
+                        ? conversationElement.sender.username
+                        : null;
+                    const senderAvatar = conversationElement.sender.avatar
+                        ? conversationElement.sender.avatar
+                        : null;
+
+                    return {
+                        message: conversationElement.message,
+                        message_id: message_id,
+                        unread: conversationElement.unread,
+                        created: conversationElement.created,
+                        sender: {
+                            id: senderId,
+                            username: senderUsername,
+                            avatar: senderAvatar,
+                        },
+                    };
+                }
+            );
+
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
                     conversation_id: chatData._id,
-                    conversation: dataResConversation.slice(index, index + count),
+                    conversation: dataResConversation.slice(
+                        index,
+                        index + count
+                    ),
                     is_blocked: chatData.is_blocked == _id,
                 },
             });
@@ -199,7 +212,6 @@ const getConversation = async (req, res) => {
     }
 };
 
-
 const getListConversation = async (req, res) => {
     try {
         const { _id } = req.userDataPass;
@@ -240,7 +252,8 @@ const getListConversation = async (req, res) => {
 
         let numNewMessage = 0;
         userData.conversations.forEach((element) => {
-            const lastConversation = element.conversation[element.conversation.length - 1];
+            const lastConversation =
+                element.conversation[element.conversation.length - 1];
             if (lastConversation && lastConversation.unread === '1') {
                 numNewMessage += 1;
             }
@@ -261,7 +274,6 @@ const getListConversation = async (req, res) => {
     }
 };
 
-
 const setReadMessage = async (req, res) => {
     const { partner_id, conversation_id } = req.query;
     const { _id } = req.userDataPass;
@@ -281,7 +293,7 @@ const setReadMessage = async (req, res) => {
             throw Error('notfound');
         }
 
-        chatData.unread = '0'
+        chatData.unread = '0';
 
         chatData.conversation.forEach((element) => {
             element.unread = '0';
@@ -307,7 +319,7 @@ const setReadMessage = async (req, res) => {
                 message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
             });
         } else {
-            console.log(error)
+            console.log(error);
             return res.status(500).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
@@ -316,22 +328,26 @@ const setReadMessage = async (req, res) => {
     }
 };
 
-
 const deleteConversation = async (req, res) => {
     const { token, partner_id, conversation_id } = req.query;
     const { _id } = req.userDataPass;
     try {
-        const chatData = await Conversation.findOneAndDelete({_id: conversation_id});
+        const chatData = await Conversation.findOneAndDelete({
+            _id: conversation_id,
+        });
         const sendUserData = await User.findByIdAndUpdate(_id, {
             $pull: {
-                conversations: conversation_id
+                conversations: conversation_id,
             },
-        })
-        const partnerUserData = await User.findByIdAndUpdate({_id: partner_id}, {
-            $pull: {
-                conversations: conversation_id
-            },
-        })
+        });
+        const partnerUserData = await User.findByIdAndUpdate(
+            { _id: partner_id },
+            {
+                $pull: {
+                    conversations: conversation_id,
+                },
+            }
+        );
         if (!chatData || !sendUserData || !partnerUserData) {
             throw Error('nodata');
         }
@@ -346,7 +362,7 @@ const deleteConversation = async (req, res) => {
                 message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
             });
         } else {
-            console.log(error)
+            console.log(error);
             return res.status(500).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
@@ -368,8 +384,8 @@ const deleteMessage = async (req, res) => {
             },
             { new: true } // This option returns the modified document rather than the original
         );
-        
-        console.log(chatData)
+
+        console.log(chatData);
         if (!chatData) {
             throw Error('nodata');
         }
@@ -384,7 +400,7 @@ const deleteMessage = async (req, res) => {
                 message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
             });
         } else {
-            console.log(error)
+            console.log(error);
             return res.status(500).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,

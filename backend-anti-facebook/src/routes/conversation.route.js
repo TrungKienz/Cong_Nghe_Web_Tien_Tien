@@ -15,19 +15,11 @@ router.post(
     isAuth,
     conversationController.getConversation
 );
-router.post(
-    '/set_read_message',
-    isAuth,
-    conversationController.setReadMessage
-);
+router.post('/set_read_message', isAuth, conversationController.setReadMessage);
 router.post(
     '/delete_conversation',
     isAuth,
     conversationController.deleteConversation
 );
-router.post(
-    '/delete_message',
-    isAuth,
-    conversationController.deleteMessage
-);
+router.post('/delete_message', isAuth, conversationController.deleteMessage);
 module.exports = router;

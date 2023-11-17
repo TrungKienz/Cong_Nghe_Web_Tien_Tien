@@ -954,73 +954,70 @@ const search = async (req, res) => {
     var { token, keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
     // check params
-    if(!user_id || !keyword || !index || !count){
+    if (!user_id || !keyword || !index || !count) {
         return res.status(200).json({
             code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
             message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
         });
     }
-    
+
     try {
         index = index ? index : 0;
         count = count ? count : 20;
         if (_id.toString() !== user_id || keyword == '') {
-            throw Error("params");
+            throw Error('params');
         }
-        var postData1 =await Post.find({$or: [
-            { keyword: new RegExp(keyword, "i") },
-            { keyword: new RegExp(keyword.replace(" ", "|"), "i") }
-        ]}).populate({
-            path: "author",
-            select:"username avatar"
+        var postData1 = await Post.find({
+            $or: [
+                { keyword: new RegExp(keyword, 'i') },
+                { keyword: new RegExp(keyword.replace(' ', '|'), 'i') },
+            ],
+        }).populate({
+            path: 'author',
+            select: 'username avatar',
         });
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-              id: _id,
-              author:{
-              
-              }
-              
-            }
-
-            
-        })
-        await User.findByIdAndUpdate(_id,{
-            $pull:{
+                id: _id,
+                author: {},
+            },
+        });
+        await User.findByIdAndUpdate(_id, {
+            $pull: {
                 savedSearch: {
                     keyword: keyword,
-                }
-            }
-        })
-        await User.findByIdAndUpdate(_id,{
-            $push:{
+                },
+            },
+        });
+        await User.findByIdAndUpdate(_id, {
+            $push: {
                 savedSearch: {
                     keyword: keyword,
                     created: Date.now(),
-                }
-            }
-        })
+                },
+            },
+        });
     } catch (error) {
-        if (error.message == "params") {
+        if (error.message == 'params') {
             return res.status(500).json({
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID
-            })
-        } else if (error.message == "nodata") {
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        } else if (error.message == 'nodata') {
             return res.status(500).json({
                 code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
-                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA
-            })
+                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+            });
         } else {
             return res.status(500).json({
                 code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR
-            })
+                message: statusMessage.UNKNOWN_ERROR,
+            });
         }
     }
-}
+};
 module.exports = {
     addPost,
     getPost,
