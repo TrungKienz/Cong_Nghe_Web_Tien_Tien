@@ -141,12 +141,20 @@ const getListOfFriendSuggestions = async (req, res) => {
                 message: statusMessage.USER_IS_NOT_VALIDATED,
             };
         }
+
+        const _ = ownerData.friends.toObject()
+        const ownerFriendsList = []
+        _.forEach(e => {
+          ownerFriendsList.push(e._id.toString())
+        });
+        //console.log(ownerFriendsList)
         //#endregion
+
 
         //#region get list of all users
         let newList = [];
         //const filter = { settings.}
-        const usersData = await User.find().select('username friends').exec();
+        const usersData = await User.find().select('avatar username friends').exec();
         if (!usersData) {
             //For some reason cannot find any user
             throw {
@@ -158,16 +166,21 @@ const getListOfFriendSuggestions = async (req, res) => {
         usersData.forEach((user) => {
             const same_friends_count = count_same_friends(user, ownerData);
             user = user.toObject(); // ew
+            user.user_id = user._id.toString()
             user.same_friends = same_friends_count;
             delete user.friends;
-            if (user._id.toString() != _id.toString()) {
+            if (user._id.toString() != _id.toString() && check_array_contains(ownerFriendsList, user._id.toString()) == false) {
                 //Exclude the user's id
+                delete user._id
                 newList.push(user);
             }
         });
         //#endregion
 
+
         //#region adjust list with index and count
+        //newList.user_id = newList._id.toString()
+
         newList = shuffle(newList);
 
         if (index > newList.length - 1) {
@@ -247,7 +260,9 @@ const getListOfFriendRequests = async (req, res) => {
             const same_friends_count = count_same_friends(_userInfo, user);
             _userInfo = _userInfo.toObject();
             _userInfo.created = infoArr[i].created;
+            _userInfo.id = _userInfo._id.toString()
             _userInfo.same_friends = same_friends_count;
+            delete _userInfo._id
             delete _userInfo.friends;
             newList.push(_userInfo);
         }
@@ -330,10 +345,12 @@ const getListOfUserFriends = async (req, res) => {
             let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select(
                 'username avatar friends'
             );
-            const same_friends_count = count_same_friends(_userInfo, user);
+            const same_friends_count = count_same_friends(_userInfo, user, );
             _userInfo = _userInfo.toObject();
             _userInfo.created = infoArr[i].created;
+            _userInfo.id = _userInfo._id.toString()
             _userInfo.same_friends = same_friends_count;
+            delete _userInfo._id
             delete _userInfo.friends;
             newList.push(_userInfo);
         }
@@ -579,7 +596,6 @@ function count_same_friends(user1, user2) {
     friendlist1.forEach((friend) => {
         friendsID_arr1.push(friend._id.toString());
     });
-
     friendlist2.forEach((friend) => {
         friendsID_arr2.push(friend._id.toString());
     });
