@@ -253,7 +253,7 @@ const getPost = async (req, res) => {
                         })),
                         author: {
                             id: resultUser._id,
-                            name: resultUser.name,
+                            name: resultUser.username,
                             avatar: resultUser.avatar,
                             coins: resultUser.coins,
                             listing: resultUser.postIds.map((postId) => ({
@@ -481,9 +481,11 @@ const editPost = async (req, res) => {
             } else {
                 return res.status(200).json({
                     code: statusCode.OK,
-                    message: {
-                        coins: currentCoin,
-                    },
+                    // message: {
+                    //     coins: currentCoin,
+                    // },
+                    message: statusMessage.OK,
+                    coins: currentCoin,
                 });
             }
         } catch (e) {
@@ -545,9 +547,11 @@ const deletePost = async (req, res) => {
         }
         return res.status(200).json({
             code: statusCode.OK,
-            message: {
-                coins: currentCoin,
-            },
+            // message: {
+            //     coins: currentCoin,
+            // },
+            message: statusMessage.OK,
+            coins: currentCoin,
         });
     } catch (error) {
         if (error.message == 'Post is not existed') {
@@ -650,6 +654,12 @@ const feel = async (req, res) => {
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
+                data: {
+                    disappointed: postData.disappointed
+                        ? postData.disappointed
+                        : 0,
+                    kudos: postData.kudos ? postData.kudos : 0,
+                },
             });
         } else {
             return res.status(404).json({
