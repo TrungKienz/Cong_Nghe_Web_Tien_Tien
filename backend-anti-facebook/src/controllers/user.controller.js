@@ -149,6 +149,7 @@ const change_password = async (req, res) => {
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
+            data: {},
         });
     } catch (error) {
         console.log(error.message);
@@ -276,7 +277,8 @@ const setPushSettings = async (req, res) => {
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: result.settings,
+            // data: result.settings,
+            data: {},
         });
     } catch (error) {
         if (error.massage == 'params') {

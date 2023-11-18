@@ -77,12 +77,14 @@ const signup = async (req, res) => {
                 const userData = await User.findOne({ email: email });
                 if (!userData) {
                     const hashedPassword = md5(password);
+                    const verifyCode = generateRandom6DigitNumber();
 
-                    const user = new User({
+                    const user = await new User({
                         email: email,
                         password: hashedPassword,
                         active: -1,
                         coins: 10,
+                        verifyCode: verifyCode.toString(),
                     });
                     const accessToken = await jwtHelper.generateToken(
                         { _id: user._id, email: user.email },
@@ -98,6 +100,7 @@ const signup = async (req, res) => {
                         //     id: user._id,
                         //     token: accessToken,
                         // },
+                        data: {},
                     });
                 } else {
                     // phonenumber đã được đăng kí từ trước
@@ -248,9 +251,9 @@ const getVerifyCode = async (req, res) => {
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
-                data: {
-                    code_verify: userData.verifyCode,
-                },
+                // data: {
+                //     code_verify: userData.verifyCode,
+                // },
             });
         } else {
             return res.status(200).json({
@@ -300,7 +303,7 @@ const checkVerifyCode = async (req, res) => {
                     code: statusCode.OK,
                     message: statusMessage.OK,
                     data: {
-                        // token: accessToken,
+                        token: accessToken,
                         id: userData._id,
                         active: 1,
                     },
