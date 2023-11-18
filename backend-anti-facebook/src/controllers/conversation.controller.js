@@ -122,7 +122,7 @@ const getConversation = async (req, res) => {
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    conversation_id: chatData._id,
+                    // conversation_id: chatData._id,
                     conversation: dataResConversation.slice(
                         index,
                         index + count
@@ -305,7 +305,8 @@ const setReadMessage = async (req, res) => {
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: chatData,
+            // data: chatData,
+            data: {},
         });
     } catch (error) {
         if (error.message == 'notfound') {
@@ -354,6 +355,7 @@ const deleteConversation = async (req, res) => {
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
+            data: {},
         });
     } catch (error) {
         if (error.message == 'nodata') {

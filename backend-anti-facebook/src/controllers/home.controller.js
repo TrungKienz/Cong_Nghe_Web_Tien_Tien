@@ -383,10 +383,11 @@ const setDevToken = async (req, res) => {
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: {
-                devtype: userData.devtype,
-                devtoken: userData.devtoken,
-            },
+            // data: {
+            //     devtype: userData.devtype,
+            //     devtoken: userData.devtoken,
+            // },
+            data: {},
         });
     } catch (error) {
         console.log(error);
