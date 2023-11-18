@@ -20,5 +20,4 @@ router.post('/setPushSettings', isAuth, afterLogin.setPushSettings);
 router.post('/setBlock', isAuth, afterLogin.setBlock);
 router.post('/check_new_version', isAuth, afterLogin.checkNewVersion);
 
-
 module.exports = router;

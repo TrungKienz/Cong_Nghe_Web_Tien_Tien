@@ -780,245 +780,8 @@ const like = async (req, res) => {
 const search = async (req, res) => {
     var { keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
-  
+
     if (!user_id) {
-      return res.status(200).json({
-        code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
-        message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
-      });
-    }
-  
-    try {
-      index = index ? index : 0;
-      count = count ? count : 20;
-  
-      if (
-        !keyword ||
-        _id.toString() !== user_id ||
-        isNaN(index) ||
-        isNaN(count) ||
-        !index ||
-        !count
-      ) {
-        throw Error("params");
-      }
-  
-      // Tìm kiếm các kết quả đủ từ và đúng thứ tự
-      var postData1 = await Post.find({
-        described: new RegExp(keyword, "i"),
-      });
-  
-      // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự
-      var postData2 = await Post.find({
-        $or: [
-          { keyword: new RegExp(keyword, "i") },
-          { keyword: new RegExp(keyword.replace(" ", "|"), "i") },
-        ],
-      }).populate({
-        path: "author",
-        select: "username avatar",
-      });
-  
-      // Sắp xếp kết quả theo ưu tiên
-      var sortedResults = [];
-  
-      // Đưa các kết quả đủ từ và đúng thứ tự lên đầu danh sách
-      sortedResults = sortedResults.concat(postData1);
-  
-      // Lọc và thêm các kết quả đủ từ nhưng không đúng thứ tự vào danh sách
-      postData2.forEach((result) => {
-        if (!sortedResults.includes(result)) {
-          sortedResults.push(result);
-        }
-      });
-  
-      // Trả về kết quả đã được sắp xếp
-      res.status(200).json({
-        code: statusCode.OK,
-        message: statusMessage.OK,
-        data: {
-          id: _id,
-          results: sortedResults,
-        },
-      });
-  
-      // Cập nhật danh sách tìm kiếm đã lưu của người dùng
-      await User.findByIdAndUpdate(
-        _id,
-        {
-          $pull: {
-            savedSearch: {
-              keyword: keyword,
-            },
-          },
-        },
-        { new: true }
-      );
-  
-      await User.findByIdAndUpdate(
-        _id,
-        {
-          $push: {
-            savedSearch: {
-              keyword: keyword,
-              created: Date.now(),
-            },
-          },
-        },
-        { new: true }
-      );
-    } catch (error) {
-      if (error.message == "params") {
-        return res.status(500).json({
-          code: statusCode.PARAMETER_VALUE_IS_INVALID,
-          message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-        });
-      } else if (error.message == "nodata") {
-        return res.status(500).json({
-          code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
-          message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
-        });
-      } else {
-        return res.status(500).json({
-          code: statusCode.UNKNOWN_ERROR,
-          message: statusMessage.UNKNOWN_ERROR,
-        });
-      }
-    }
-  };
-/*
-
-const getSavedSearch = async (req, res) => {
-    var { token, index, count } = req.query;
-    const { _id } = req.userDataPass;
-    // check params
-    if(!index || !count){
-        return res.status(200).json({
-            code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
-            message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
-        });
-    }
-    try{
-        index = parseInt(index);
-        count = parseInt(count);
-    }catch (e) {
-        return res.status(200).json({
-            code: statusCode.PARAMETER_TYPE_IS_INVALID,
-            message: statusMessage.PARAMETER_TYPE_IS_INVALID,
-        });
-    }
-    if(isNaN(index) || isNaN(count)){
-        return res.status(200).json({
-            code: statusCode.PARAMETER_TYPE_IS_INVALID,
-            message: statusMessage.PARAMETER_TYPE_IS_INVALID,
-        });
-    }
-    if(index < 0 || count < 0){
-        return res.status(200).json({
-            code: statusCode.PARAMETER_VALUE_IS_INVALID,
-            message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-        });
-    }
-
-    try {
-        index = index ? index : 0;
-    count = count ? count : 20;
-        var userData = req.userDataPass;
-        if (!userData) {
-            throw Error("nodata");
-        }
-        return res.status(200).json({
-            code: statusCode.OK,
-            message: statusMessage.OK,
-            data: userData.savedSearch.sort((a,b)=>b.created-a.created).slice(Number(index),Number(index)+Number(count) ),
-        })
-    } catch (error) {
-        if (error.message == "params") {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID
-            })
-        } else if (error.message == "nodata") {
-            return res.status(200).json({
-                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
-                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA
-            })
-        } else {
-            return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR
-            })
-        }
-    }
-}
-
-const delSavedSearch = async (req, res) => {
-    var { token, search_id, all } = req.query;
-    const { _id } = req.userDataPass;
-    // check params
-    if(isNaN(all)){
-        all = 0;
-    }
-    try {
-        if(Number(all)==1){
-            await User.findByIdAndUpdate(_id, {
-                $set: {
-                    savedSearch: []
-                }
-            });
-            return res.status(200).json({
-                code: statusCode.OK,
-                message: statusMessage.OK
-            })
-        }
-        else if (Number(all)==0&&search_id) {
-                const userData = req.userDataPass.savedSearch.find((i) => i.id === search_id);
-                if(!userData){
-                    return res.status(500).json({
-                        code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                        message: statusMessage.PARAMETER_VALUE_IS_INVALID
-                    })
-                }
-            await User.findByIdAndUpdate(_id,{
-                $pull:{
-                    savedSearch:{
-                        _id: search_id
-                    }
-                }
-            });
-            return res.status(200).json({
-                code: statusCode.OK,
-                message: statusMessage.OK
-            })
-        } else {
-            throw Error("params");
-        }
-    } catch (error) {
-        if (error.message == "params") {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID
-            })
-        } else if (error.message == "nodata") {
-            return res.status(200).json({
-                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
-                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA
-            })
-        } else {
-            return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR
-            })
-        }
-    }
-}
-
-*/
-/* const search = async (req, res) => {
-    var { token, keyword, index, count, user_id } = req.query;
-    const { _id } = req.userDataPass;
-    // check params
-    if (!user_id || !keyword || !index || !count) {
         return res.status(200).json({
             code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
             message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
@@ -1028,10 +791,25 @@ const delSavedSearch = async (req, res) => {
     try {
         index = index ? index : 0;
         count = count ? count : 20;
-        if (_id.toString() !== user_id || keyword == '') {
+
+        if (
+            !keyword ||
+            _id.toString() !== user_id ||
+            isNaN(index) ||
+            isNaN(count) ||
+            !index ||
+            !count
+        ) {
             throw Error('params');
         }
+
+        // Tìm kiếm các kết quả đủ từ và đúng thứ tự
         var postData1 = await Post.find({
+            described: new RegExp(keyword, 'i'),
+        });
+
+        // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự
+        var postData2 = await Post.find({
             $or: [
                 { keyword: new RegExp(keyword, 'i') },
                 { keyword: new RegExp(keyword.replace(' ', '|'), 'i') },
@@ -1040,29 +818,55 @@ const delSavedSearch = async (req, res) => {
             path: 'author',
             select: 'username avatar',
         });
+
+        // Sắp xếp kết quả theo ưu tiên
+        var sortedResults = [];
+
+        // Đưa các kết quả đủ từ và đúng thứ tự lên đầu danh sách
+        sortedResults = sortedResults.concat(postData1);
+
+        // Lọc và thêm các kết quả đủ từ nhưng không đúng thứ tự vào danh sách
+        postData2.forEach((result) => {
+            if (!sortedResults.includes(result)) {
+                sortedResults.push(result);
+            }
+        });
+
+        // Trả về kết quả đã được sắp xếp
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
                 id: _id,
-                author: {},
+                results: sortedResults,
             },
         });
-        await User.findByIdAndUpdate(_id, {
-            $pull: {
-                savedSearch: {
-                    keyword: keyword,
+
+        // Cập nhật danh sách tìm kiếm đã lưu của người dùng
+        await User.findByIdAndUpdate(
+            _id,
+            {
+                $pull: {
+                    savedSearch: {
+                        keyword: keyword,
+                    },
                 },
             },
-        });
-        await User.findByIdAndUpdate(_id, {
-            $push: {
-                savedSearch: {
-                    keyword: keyword,
-                    created: Date.now(),
+            { new: true }
+        );
+
+        await User.findByIdAndUpdate(
+            _id,
+            {
+                $push: {
+                    savedSearch: {
+                        keyword: keyword,
+                        created: Date.now(),
+                    },
                 },
             },
-        });
+            { new: true }
+        );
     } catch (error) {
         if (error.message == 'params') {
             return res.status(500).json({
@@ -1081,7 +885,136 @@ const delSavedSearch = async (req, res) => {
             });
         }
     }
-}; */
+};
+
+const getSavedSearch = async (req, res) => {
+    var { token, index, count } = req.query;
+    const { _id } = req.userDataPass;
+    // check params
+    if (!index || !count) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+            message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+        });
+    }
+    try {
+        index = parseInt(index);
+        count = parseInt(count);
+    } catch (e) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_TYPE_IS_INVALID,
+            message: statusMessage.PARAMETER_TYPE_IS_INVALID,
+        });
+    }
+    if (isNaN(index) || isNaN(count)) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_TYPE_IS_INVALID,
+            message: statusMessage.PARAMETER_TYPE_IS_INVALID,
+        });
+    }
+    if (index < 0 || count < 0) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_VALUE_IS_INVALID,
+            message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+        });
+    }
+
+    try {
+        index = index ? index : 0;
+        count = count ? count : 20;
+        var userData = req.userDataPass;
+        if (!userData) {
+            throw Error('nodata');
+        }
+        return res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: userData.savedSearch
+                .sort((a, b) => b.created - a.created)
+                .slice(Number(index), Number(index) + Number(count)),
+        });
+    } catch (error) {
+        if (error.message == 'params') {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        } else if (error.message == 'nodata') {
+            return res.status(200).json({
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+            });
+        } else {
+            return res.status(200).json({
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
+            });
+        }
+    }
+};
+
+const delSavedSearch = async (req, res) => {
+    var { token, search_id, all } = req.query;
+    const { _id } = req.userDataPass;
+    // check params
+    if (isNaN(all)) {
+        all = 0;
+    }
+    try {
+        if (Number(all) == 1) {
+            await User.findByIdAndUpdate(_id, {
+                $set: {
+                    savedSearch: [],
+                },
+            });
+            return res.status(200).json({
+                code: statusCode.OK,
+                message: statusMessage.OK,
+            });
+        } else if (Number(all) == 0 && search_id) {
+            const userData = req.userDataPass.savedSearch.find(
+                (i) => i.id === search_id
+            );
+            if (!userData) {
+                return res.status(500).json({
+                    code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                    message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+                });
+            }
+            await User.findByIdAndUpdate(_id, {
+                $pull: {
+                    savedSearch: {
+                        _id: search_id,
+                    },
+                },
+            });
+            return res.status(200).json({
+                code: statusCode.OK,
+                message: statusMessage.OK,
+            });
+        } else {
+            throw Error('params');
+        }
+    } catch (error) {
+        if (error.message == 'params') {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        } else if (error.message == 'nodata') {
+            return res.status(200).json({
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+            });
+        } else {
+            return res.status(200).json({
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
+            });
+        }
+    }
+};
+
 module.exports = {
     addPost,
     getPost,
@@ -1091,5 +1024,7 @@ module.exports = {
     feel,
     like,
     deletePostAll,
-    search
+    search,
+    getSavedSearch,
+    delSavedSearch,
 };
