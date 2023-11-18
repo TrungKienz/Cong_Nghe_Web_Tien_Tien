@@ -94,10 +94,10 @@ const signup = async (req, res) => {
                     return res.status(200).json({
                         code: statusCode.OK,
                         message: statusMessage.OK,
-                        data: {
-                            id: user._id,
-                            token: accessToken,
-                        },
+                        // data: {
+                        //     id: user._id,
+                        //     token: accessToken,
+                        // },
                     });
                 } else {
                     // phonenumber đã được đăng kí từ trước
