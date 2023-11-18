@@ -10,7 +10,7 @@ router.post('/edit_post', isAuth, postController.editPost);
 router.post('/delete_post', isAuth, postController.deletePost);
 router.post('/report_post', isAuth, postController.reportPost);
 router.post('/feel', isAuth, postController.feel);
-// router.post("/search", isAuth,postController.search);
+router.post("/search", isAuth, postController.search);
 // router.post("/like", postController.like);
 // router.post("/get_list_posts", fiveController.getListPosts);
 // router.post("/check_new_item", fiveController.checkNewItem);

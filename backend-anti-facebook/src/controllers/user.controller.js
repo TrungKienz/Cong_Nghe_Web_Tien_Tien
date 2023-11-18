@@ -432,7 +432,8 @@ const checkNewVersion = async (req, res)=>{
         })
       }
     }
-  }
+};
+
 module.exports = {
     logout,
     changeInfoAfterSignup,

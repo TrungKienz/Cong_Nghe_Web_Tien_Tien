@@ -776,53 +776,117 @@ const like = async (req, res) => {
         });
     }
 };
-/*
+
 const search = async (req, res) => {
-  const { keyword, index, count } = req.query;
-  const post_id = req.query._id // post's id
-  const { _id } = req.userDataPass; //user's id
-
-  console.log (post_id)
-  console.log (_id.toString())
-
-  try {
-    if (!_id || !keyword || !index || !count) {
-      throw Error('Missing param');
-    }
-
-    // Normalize the keyword
-    const normalizedKeyword = keyword.toLowerCase();
-
-    // Perform the search operation
-    const results = await posts.find({
-      $or: [
-        { normalizedKeyword: { $regex: normalizedKeyword, $options: 'i' } },
-        { described: { $regex: normalizedKeyword, $options: 'i' } }
-      ]
-    });  
-
-    // Do something with the search results
-
-    return res.status(200).json({
-      code: statusCode.SUCCESS, 
-      message: statusMessage.SUCCESS,
-      results: results
-    });
-  } catch (error) {
-    console.log(error);
-    if (error.message === 'Missing param') {
-      return res.status(400).json({
-        code: statusCode.BAD_REQUEST,
-        message: statusMessage.BAD_REQUEST
-      });
-    } else {
-      return res.status(500).json({
-        code: statusCode.INTERNAL_SERVER_ERROR,
-        message: statusMessage.INTERNAL_SERVER_ERROR
+    var { keyword, index, count, user_id } = req.query;
+    const { _id } = req.userDataPass;
+  
+    if (!user_id) {
+      return res.status(200).json({
+        code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+        message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
       });
     }
-  }
-};
+  
+    try {
+      index = index ? index : 0;
+      count = count ? count : 20;
+  
+      if (
+        !keyword ||
+        _id.toString() !== user_id ||
+        isNaN(index) ||
+        isNaN(count) ||
+        !index ||
+        !count
+      ) {
+        throw Error("params");
+      }
+  
+      // Tìm kiếm các kết quả đủ từ và đúng thứ tự
+      var postData1 = await Post.find({
+        described: new RegExp(keyword, "i"),
+      });
+  
+      // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự
+      var postData2 = await Post.find({
+        $or: [
+          { keyword: new RegExp(keyword, "i") },
+          { keyword: new RegExp(keyword.replace(" ", "|"), "i") },
+        ],
+      }).populate({
+        path: "author",
+        select: "username avatar",
+      });
+  
+      // Sắp xếp kết quả theo ưu tiên
+      var sortedResults = [];
+  
+      // Đưa các kết quả đủ từ và đúng thứ tự lên đầu danh sách
+      sortedResults = sortedResults.concat(postData1);
+  
+      // Lọc và thêm các kết quả đủ từ nhưng không đúng thứ tự vào danh sách
+      postData2.forEach((result) => {
+        if (!sortedResults.includes(result)) {
+          sortedResults.push(result);
+        }
+      });
+  
+      // Trả về kết quả đã được sắp xếp
+      res.status(200).json({
+        code: statusCode.OK,
+        message: statusMessage.OK,
+        data: {
+          id: _id,
+          results: sortedResults,
+        },
+      });
+  
+      // Cập nhật danh sách tìm kiếm đã lưu của người dùng
+      await User.findByIdAndUpdate(
+        _id,
+        {
+          $pull: {
+            savedSearch: {
+              keyword: keyword,
+            },
+          },
+        },
+        { new: true }
+      );
+  
+      await User.findByIdAndUpdate(
+        _id,
+        {
+          $push: {
+            savedSearch: {
+              keyword: keyword,
+              created: Date.now(),
+            },
+          },
+        },
+        { new: true }
+      );
+    } catch (error) {
+      if (error.message == "params") {
+        return res.status(500).json({
+          code: statusCode.PARAMETER_VALUE_IS_INVALID,
+          message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+        });
+      } else if (error.message == "nodata") {
+        return res.status(500).json({
+          code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+          message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+        });
+      } else {
+        return res.status(500).json({
+          code: statusCode.UNKNOWN_ERROR,
+          message: statusMessage.UNKNOWN_ERROR,
+        });
+      }
+    }
+  };
+/*
 
 const getSavedSearch = async (req, res) => {
     var { token, index, count } = req.query;
@@ -950,7 +1014,7 @@ const delSavedSearch = async (req, res) => {
 }
 
 */
-const search = async (req, res) => {
+/* const search = async (req, res) => {
     var { token, keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
     // check params
@@ -1017,7 +1081,7 @@ const search = async (req, res) => {
             });
         }
     }
-};
+}; */
 module.exports = {
     addPost,
     getPost,
@@ -1027,4 +1091,5 @@ module.exports = {
     feel,
     like,
     deletePostAll,
+    search
 };
