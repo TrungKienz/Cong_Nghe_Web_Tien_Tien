@@ -897,7 +897,7 @@ const search = async (req, res) => {
     }
 };
 
-const getSavedSearch = async (req, res) => {
+const get_saved_search = async (req, res) => {
     var { token, index, count } = req.query;
     const { _id } = req.userDataPass;
     // check params
@@ -963,7 +963,7 @@ const getSavedSearch = async (req, res) => {
     }
 };
 
-const delSavedSearch = async (req, res) => {
+const del_saved_search = async (req, res) => {
     var { token, search_id, all } = req.query;
     const { _id } = req.userDataPass;
     // check params
@@ -1035,6 +1035,6 @@ module.exports = {
     like,
     deletePostAll,
     search,
-    getSavedSearch,
-    delSavedSearch,
+    get_saved_search,
+    del_saved_search,
 };
