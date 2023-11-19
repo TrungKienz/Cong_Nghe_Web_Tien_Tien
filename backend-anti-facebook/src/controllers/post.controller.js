@@ -188,7 +188,7 @@ const removeAscent = (str) => {
     return str;
 };
 
-const getPost = async (req, res) => {
+const getListPost = async (req, res) => {
     try {
         const { token, id } = req.query;
         const { _id } = req.userDataPass;
@@ -976,7 +976,7 @@ const delSavedSearch = async (req, res) => {
 
 module.exports = {
     addPost,
-    getPost,
+    getListPost,
     editPost,
     deletePost,
     reportPost,
