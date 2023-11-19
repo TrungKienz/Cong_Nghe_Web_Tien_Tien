@@ -403,19 +403,23 @@ const check_new_version = async (req, res) => {
             throw Error('params');
         }
         var versionData = await Version.find({}).sort({ created: 1 });
-
+        
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                version: versionData[0],
+                version: {
+                    version: versionData[0].version,
+                    require: versionData[0].require,
+                    url: versionData[0].url,
+                },
                 user: {
                     id: _id,
                     active: active,
                 },
                 badge: 'thong bao chua doc',
                 unread_message: 'tin nhan chua doc',
-                now: 'chi so phien ban',
+                now: versionData[0].version,
             },
         });
     } catch (error) {
