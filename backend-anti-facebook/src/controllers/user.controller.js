@@ -176,7 +176,7 @@ const change_password = async (req, res) => {
     }
 };
 
-const getPushSettings = async (req, res) => {
+const get_push_settings = async (req, res) => {
     const { token } = req.query;
     const { _id } = req.userDataPass;
     try {
@@ -201,7 +201,7 @@ const getPushSettings = async (req, res) => {
     }
 };
 
-const setPushSettings = async (req, res) => {
+const set_push_settings = async (req, res) => {
     const {
         token,
         like_comment,
@@ -295,7 +295,7 @@ const setPushSettings = async (req, res) => {
     }
 };
 
-const setBlock = async (req, res) => {
+const set_block = async (req, res) => {
     let { token, user_id, type } = req.query;
     const { _id } = req.userDataPass;
 
@@ -395,7 +395,7 @@ const setBlock = async (req, res) => {
     }
 };
 
-const checkNewVersion = async (req, res) => {
+const check_new_version = async (req, res) => {
     const { token, last_update } = req.query;
     const { _id, active } = req.userDataPass;
     try {
@@ -437,8 +437,8 @@ module.exports = {
     logout,
     changeInfoAfterSignup,
     change_password,
-    getPushSettings,
-    setPushSettings,
-    setBlock,
-    checkNewVersion,
+    get_push_settings,
+    set_push_settings,
+    set_block,
+    check_new_version,
 };
