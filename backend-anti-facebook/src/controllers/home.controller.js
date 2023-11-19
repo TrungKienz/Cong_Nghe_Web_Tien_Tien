@@ -94,6 +94,7 @@ const getListPosts = async (req, res) => {
                     },
                 },
             });
+            console.log("resultData", resultData)
             resultData.postIds.map((e) => {
                 e.is_liked = e.like_list.includes(_id);
             });
