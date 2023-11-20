@@ -1,58 +1,55 @@
 const User = require('../models/user.model.js');
+const Notification = require('../models/notification.model.js');
+
 const formidableHelper = require('../helpers/formidable.helper');
 
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
+const { checkNewNotification } = require('./notification.controller.js');
 
 
 const checkNewItem = async (req, res) => {
-    const { last_id, category_id } = req.query;
-    const { _id } = req.userDataPass;
     try {
-        var result = await User.findById(_id).populate({
-            path: 'friends',
-            select: 'postIds',
-            populate: {
-                path: 'postIds',
-                // populate: {
-                //   path: "author",
-                //   select: "avatar username",
-                // },
-                options: {
-                    sort: {
-                        created: -1,
+        const { last_id, category_id } = req.query;
+        const { _id } = req.userDataPass;
+        const lastId = last_id || "0";
+
+        // Validate category_id
+        if (category_id <= 0 || category_id >= 3) {
+            throw new Error('PARAMETER_VALUE_IS_INVALID');
+        }
+
+        // Retrieve user's friends' posts sorted by created date
+        const result = await User.findById(_id)
+            .populate({
+                path: 'friends',
+                select: 'postIds',
+                populate: {
+                    path: 'postIds',
+                    options: {
+                        sort: { created: -1 },
                     },
                 },
-            },
-        });
-        var postRes = [];
-        result.friends.map((e, index) => {
-            postRes = postRes.concat(e.postIds);
-            // console.log(postRes)
-        });
-        function checkAdult(post) {
-            return post._id == last_id;
-        }
-        var findLastIndex = postRes.findIndex(checkAdult);
-        var new_items = 0;
-        var newLastIndex;
-        if (findLastIndex == -1) {
-            new_items = postRes.length;
-            // newLastIndex
-        } else {
-            new_items = findLastIndex;
-        }
+            });
+
+        // Flatten the array of postIds from friends
+        const postRes = result.friends.flatMap((friend) => friend.postIds);
+
+        // Find the index of the last_id in the flattened array
+        const findLastIndex = postRes.findIndex((post) => post._id === lastId);
+
+        // Calculate the number of new items
+        const new_items = (findLastIndex === -1) ? postRes.length : findLastIndex;
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                // posts: postRes.slice(index, index + count),
-                // last_id: postRes[0]._id,
-                new_items: new_items,
+                new_items,
             },
         });
     } catch (error) {
-        if (error.message == 'params') {
+        if (error.message === 'PARAMETER_VALUE_IS_INVALID') {
             return res.status(200).json({
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
@@ -65,6 +62,7 @@ const checkNewItem = async (req, res) => {
         }
     }
 };
+
 
 const getNotification = async (req, res) => {
     var { index, count } = req.query;
@@ -101,18 +99,46 @@ const getNotification = async (req, res) => {
         count = count ? count : 20;
 
         var userData = await User.findById(_id).populate({
-            path: 'notifications.id',
-
-            // select: "username avatar",
+            path: 'notifications',
         });
+
+        var resData = [];
+
+        console.log(userData.notifications)
+
+        userData.notifications.map((notification) => {
+            resData.push({
+                type: notification.type,
+                object_id: notification.object_id,
+                title: notification.title,
+                notification_id: notification._id,
+                created: notification.created,
+                avatar: notification.avatar,
+                group: notification.group,
+                read: notification.read,
+            })
+        })
+
+        console.log(resData)
+
+        var countNewNoti = 0;
+        resData.map((data) => {
+            if (data.read === "0") {
+                countNewNoti += 1;
+            }
+        })
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: userData.notifications
-                .sort((a, b) => b.id.created - a.id.created)
+            data: resData
+                .sort((a, b) => b.created - a.created)
                 .slice(Number(index), Number(index) + Number(count)),
+            last_update: userData.notifications.last_update || Date(Date.now()),
+            badge: countNewNoti,
         });
     } catch (error) {
+        console.log(error)
         return res.status(500).json({
             code: statusCode.UNKNOWN_ERROR,
             message: statusMessage.UNKNOWN_ERROR,
@@ -123,26 +149,48 @@ const getNotification = async (req, res) => {
 const setReadNotification = async (req, res) => {
     const { notification_id } = req.query;
     const { _id } = req.userDataPass;
+
     try {
-        var userData = req.userDataPass;
-        userData.notifications.map((e) => {
-            if (e.id == notification_id) {
-                e.read = '1';
+        await Notification.findByIdAndUpdate(
+            notification_id,
+            {
+                $set: {
+                    read: "1",
+                }
+            }
+        );
+
+        let newNoti = 0;
+
+        const userData = await User.findById(_id).populate({
+            path: 'notifications',
+            select: 'read last_update'
+        });
+
+        userData.notifications.forEach((notification) => {
+            if (notification.read === '0') {
+                newNoti += 1;
             }
         });
-        await userData.save();
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: userData.notifications,
+            data: {
+                badge: newNoti,
+                last_update: Date(Date.now()),
+            },
         });
     } catch (error) {
+        console.error(error);
+
         return res.status(500).json({
             code: statusCode.UNKNOWN_ERROR,
             message: statusMessage.UNKNOWN_ERROR,
         });
     }
 };
+
 
 const setDevToken = async (req, res) => {
     const { token, devtype, devtoken } = req.query;

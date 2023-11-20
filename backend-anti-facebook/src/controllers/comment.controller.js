@@ -1,8 +1,11 @@
+const mongoose = require('mongoose');
+
 const Post = require('../models/post.model.js');
 const User = require('../models/user.model.js');
 const Comment = require('../models/comment.model');
 const Mark = require('../models/mark.model.js');
 const Notification = require('../models/notification.model');
+const {addNotification} = require('./notification.controller.js');
 
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
@@ -103,7 +106,7 @@ const getMarkComment = async (req, res) => {
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                mappedMark,
+                mark: mappedMark,
                 comments: mappedComment,
                 is_blocked: postData.is_blocked || 'NO',
             },
@@ -211,8 +214,31 @@ const setMarkComment = async (req, res) => {
             post.comment_list.push(newComment._id);
             await post.save();
 
+            console.log("userData.friends", userData.friends)
             // Populate the post information with the new comment
             resultData = await populatePostInformation(id);
+
+            const inputNotiData = {
+                notificationType: "comment",
+                postId: id,
+                username: userData.username,
+                lastUpdate: Date.now(),
+                avatar: userData.avatar,
+            }
+
+            const notiData = await addNotification(inputNotiData, _id);
+            const objectNotiId = mongoose.Types.ObjectId(notiData._id);
+            
+            console.log("notiData", notiData);
+            await User.findOneAndUpdate(
+                { _id: post.author },
+                {
+                    $push: {
+                        notifications: objectNotiId,
+                    },
+                },
+                { new: true }
+            );
         }
 
         const { mark_list, comment_list } = resultData;
