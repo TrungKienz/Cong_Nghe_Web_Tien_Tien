@@ -1,4 +1,6 @@
 const User = require('../models/user.model.js');
+const Notification = require('../models/notification.model.js');
+
 const formidableHelper = require('../helpers/formidable.helper');
 
 const statusCode = require('./../constants/statusCode.constant.js');
@@ -147,26 +149,48 @@ const getNotification = async (req, res) => {
 const setReadNotification = async (req, res) => {
     const { notification_id } = req.query;
     const { _id } = req.userDataPass;
+
     try {
-        var userData = req.userDataPass;
-        userData.notifications.map((e) => {
-            if (e.id == notification_id) {
-                e.read = '1';
+        await Notification.findByIdAndUpdate(
+            notification_id,
+            {
+                $set: {
+                    read: "1",
+                }
+            }
+        );
+
+        let newNoti = 0;
+
+        const userData = await User.findById(_id).populate({
+            path: 'notifications',
+            select: 'read last_update'
+        });
+
+        userData.notifications.forEach((notification) => {
+            if (notification.read === '0') {
+                newNoti += 1;
             }
         });
-        await userData.save();
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: userData.notifications,
+            data: {
+                badge: newNoti,
+                last_update: Date(Date.now()),
+            },
         });
     } catch (error) {
+        console.error(error);
+
         return res.status(500).json({
             code: statusCode.UNKNOWN_ERROR,
             message: statusMessage.UNKNOWN_ERROR,
         });
     }
 };
+
 
 const setDevToken = async (req, res) => {
     const { token, devtype, devtoken } = req.query;

@@ -1,5 +1,4 @@
 const Notification = require('../models/notification.model');
-const User = require('../models/user.model');
 
 const addNotification = async (data, _id) => {
     try {
@@ -39,18 +38,5 @@ const addNotification = async (data, _id) => {
     }
 };
 
-const checkNewNotification = async (userId) => {
-    var newNoti = 0;
-    const userData = await User.findById(userId).populate({
-        path: 'notifications',
-        select: 'read'
-    })
-    userData.notifications.map((notification) => {
-        if(notification.read === '0'){
-            newNoti += 1;
-        }
-    })
-    return newNoti;
-}
 
-module.exports = { addNotification, checkNewNotification };
+module.exports = { addNotification };
