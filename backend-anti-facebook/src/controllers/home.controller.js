@@ -3,6 +3,7 @@ const formidableHelper = require('../helpers/formidable.helper');
 
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
+const { checkNewNotification } = require('./notification.controller.js');
 
 
 const checkNewItem = async (req, res) => {
@@ -96,18 +97,46 @@ const getNotification = async (req, res) => {
         count = count ? count : 20;
 
         var userData = await User.findById(_id).populate({
-            path: 'notifications.id',
-
-            // select: "username avatar",
+            path: 'notifications',
         });
+
+        var resData = [];
+
+        console.log(userData.notifications)
+
+        userData.notifications.map((notification) => {
+            resData.push({
+                type: notification.type,
+                object_id: notification.object_id,
+                title: notification.title,
+                notification_id: notification._id,
+                created: notification.created,
+                avatar: notification.avatar,
+                group: notification.group,
+                read: notification.read,
+            })
+        })
+
+        console.log(resData)
+
+        var countNewNoti = 0;
+        resData.map((data) => {
+            if (data.read === "0") {
+                countNewNoti += 1;
+            }
+        })
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: userData.notifications
-                .sort((a, b) => b.id.created - a.id.created)
+            data: resData
+                .sort((a, b) => b.created - a.created)
                 .slice(Number(index), Number(index) + Number(count)),
+            last_update: userData.notifications.last_update || Date(Date.now()),
+            badge: countNewNoti,
         });
     } catch (error) {
+        console.log(error)
         return res.status(500).json({
             code: statusCode.UNKNOWN_ERROR,
             message: statusMessage.UNKNOWN_ERROR,
