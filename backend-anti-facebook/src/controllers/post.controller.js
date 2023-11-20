@@ -817,10 +817,7 @@ const search = async (req, res) => {
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: {
-                
-                i: sortedResults.map(mapResult),
-            },
+            data: sortedResults.map(mapResult),
         });
 
         // Cập nhật danh sách tìm kiếm đã lưu của người dùng
