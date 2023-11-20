@@ -103,7 +103,7 @@ const getMarkComment = async (req, res) => {
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                mappedMark,
+                mark: mappedMark,
                 comments: mappedComment,
                 is_blocked: postData.is_blocked || 'NO',
             },
