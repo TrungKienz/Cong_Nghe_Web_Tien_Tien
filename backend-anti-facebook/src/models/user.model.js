@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema({
             created: Date,
         },
     ],
+    
     sendRequestedFriends: [
         {
             receiver: {
@@ -54,6 +55,12 @@ const userSchema = new mongoose.Schema({
         {
             type: Schema.Types.ObjectId,
             ref: 'user',
+        },
+    ],
+    mark_list: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'mark',
         },
     ],
     savedSearch: [

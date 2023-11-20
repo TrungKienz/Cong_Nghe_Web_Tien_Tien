@@ -182,6 +182,14 @@ const setMarkComment = async (req, res) => {
         let resultData;
 
         if (mark_id && (type === '1' || type === '0')) {
+
+            if (userData.mark_list.includes(id)) {
+                return res.status(200).json({
+                    code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                    message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                });
+            }
+
             // Create and save a new mark
             const newMark = await Mark.create({
                 poster: _id,
@@ -194,6 +202,8 @@ const setMarkComment = async (req, res) => {
             // Add the new mark to the post's mark_list
             post.mark_list.push(newMark._id);
             await post.save();
+            userData.mark_list.push(id);
+            await userData.save();
 
             // Populate the post information with the new mark
             resultData = await populatePostInformation(id);

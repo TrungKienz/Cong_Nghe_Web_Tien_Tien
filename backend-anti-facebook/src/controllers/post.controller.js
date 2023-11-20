@@ -225,6 +225,10 @@ const getPost = async (req, res) => {
                     path: 'poster',
                     select: 'username avatar',
                 },
+            })
+            .populate({
+                path: 'mark_list',
+                select: 'type'
             });
 
         console.log("POST: ", post)
@@ -234,6 +238,22 @@ const getPost = async (req, res) => {
         }
 
         const author = await User.findOne({ _id: post.author?._id });
+        const userData = await User.findById(_id);
+
+        var canMark;
+        if (userData.mark_list.includes(id)){
+            canMark = "0";
+        }
+
+        var isMarked;
+        if (userData.mark_list.includes(id)) {
+            isMarked = "0";
+        }
+
+        var canRate;
+        if (userData.mark_list.includes(id)) {
+            canRate = "-5";
+        }
 
         // Response Handling
         var responseData = {
@@ -244,13 +264,15 @@ const getPost = async (req, res) => {
             modified: post.modified,
             fake: "0",
             trust: "0",
+            kudos: post.kudos_list.length.toString(),
+            disappointed: post.disappointed_list.length.toString(),
             is_rated: "0",
-            is_marked: "0",
+            is_marked: isMarked || "1",
             image: [],
             video: {},
             author: {
                 id: author._id,
-                username: author.username,
+                name: author.username,
                 avatar: author.avatar,
                 coins: (author.coins).toString(),
                 listing: author.postIds.map((postId) => ({ postId })),
@@ -260,10 +282,15 @@ const getPost = async (req, res) => {
                 name: post.described,
                 has_name: "0",
             },
-            state: post.state,
+            state: post.state || "public",
             is_blocked: "0",
             can_edit: "0",
-            banned: "0",
+            banned: post.banned || "0",
+            can_mark: canMark || "1",
+            can_rate: canRate || "1",
+            url: "",
+            messages: canMark == -5 ? "Khong duoc mark":
+                    canRate == -5 ? "Khong duoc rate" : "",
         };
 
         console.log(post.image)
@@ -1161,6 +1188,184 @@ const getListPosts = async (req, res) => {
     }
 };
 
+const getListVideo = async (req, res) => {
+    try {
+        let {
+            last_id,
+            user_id,
+            index,
+            count,
+        } = req.query;
+
+        // Parameter validation
+        if (!index || !count) {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGH,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGH,
+            });
+        }
+
+        // Parse index and count to ensure they are integers
+        index = parseInt(index);
+        count = parseInt(count);
+
+        if (isNaN(index) || isNaN(count) || index < 0 || count < 0) {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        }
+
+        // Default values for index and count
+        index = index || 0;
+        count = count || 20;
+
+        // Fetch posts based on user_id or user's friends
+        let resultData;
+
+        if (user_id) {
+            resultData = await User.findById(user_id).populate({
+                path: 'postIds',
+                populate: {
+                    path: 'author',
+                    select: 'username avatar',
+                    populate: {
+                        path: 'comment_list',
+                        populate: {
+                            path: 'poster',
+                            select: 'username avatar',
+                        },
+                    },
+                },
+                options: {
+                    sort: {
+                        created: -1,
+                    },
+                },
+            });
+
+        } else {
+            const result = await User.findById(req.userDataPass._id).populate({
+                path: 'friends',
+                select: 'postIds',
+                populate: {
+                    path: 'postIds',
+                    populate: {
+                        path: 'author',
+                        select: 'avatar username coins',
+                    },
+                    options: {
+                        sort: {
+                            created: -1,
+                        },
+                    },
+                },
+            });
+
+            resultData = [].concat(...result.friends.map(e => e.postIds));
+        }
+        
+        var newItems = 0;
+
+        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
+
+        if (lastIdIndex !== -1) {
+            newItems = lastIdIndex;
+        }
+
+
+        // Manipulate post data
+        const resultArray = resultData.postIds
+        .slice(index, index + count)
+        .map(element => {
+            // Check if the author is blocked
+            var is_blocked;
+            if (resultData.blockedIds?.includes(element._id)) {
+                is_blocked = "1";
+            } else {
+                is_blocked = "0";
+            }
+
+            // Check can edit
+            const postDate = new Date(resultData.created);
+            const currentDate = Date.now();
+            const oneDayInMillis = 24 * 60 * 60 * 1000;
+
+            var isPostOverOneDay = false;
+
+            if (currentDate - postDate > oneDayInMillis) {
+                isPostOverOneDay = true;
+            }
+
+            var can_edit;
+            if (isPostOverOneDay === true && resultData.coins >= 4){
+                can_edit = "1";
+            } else if (isPostOverOneDay === false) {
+                can_edit = "1";
+            } else {
+                can_edit = "0";
+            }
+            if (element.video == "{}") {return;}
+            
+
+
+            // Construct the post object
+            return {
+                id: element._id,
+                name: element.described,
+                image: element.image.map((elementImage) => ({
+                    url: elementImage.url, 
+                })),
+                video: element.video,  
+                described: element.described,
+                created: element.created,
+                feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
+                comment_mark: (element.comment_list.length + element.mark_list.length).toString(),
+                is_felt: "0",
+                is_blocked: is_blocked,
+                can_edit: can_edit,
+                banned: "0",
+                status: element.status,
+                author: {
+                    id: element.author.id,
+                    username: element.author.username,
+                    avatar: element.author.avatar,
+                },
+            };
+        });
+
+
+        return res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: {
+                post: resultArray,
+                new_items: newItems.toString(),
+                last_id: resultData.postIds[0]._id,
+            },
+        });
+
+    } catch (error) {
+        if (error.message === 'params') {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        } else if (error.message === 'nodata') {
+            return res.status(404).json({
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+            });
+        } else {
+            console.error(error);
+            return res.status(500).json({
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
+            });
+        }
+    }
+};
+
 
 module.exports = {
     addPost,
@@ -1175,4 +1380,5 @@ module.exports = {
     search,
     get_saved_search,
     del_saved_search,
+    getListVideo,
 };
