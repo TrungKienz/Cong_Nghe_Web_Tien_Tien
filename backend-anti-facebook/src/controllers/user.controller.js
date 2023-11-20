@@ -1,6 +1,7 @@
 // Cấu hình từng controller tương ứng
 const User = require('../models/user.model.js');
 const Version = require('../models/version.model.js');
+
 const cloudHelper = require('../helpers/cloud.helper.js');
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
@@ -403,7 +404,24 @@ const check_new_version = async (req, res) => {
             throw Error('params');
         }
         var versionData = await Version.find({}).sort({ created: 1 });
-        
+        var userData = await User.findById(_id).populate({
+            path: 'notifications',
+        });
+        var resData = [];
+        userData.notifications.map((notification) => {
+            resData.push({
+                
+                notification_id: notification._id,
+                
+            })
+        })
+        var countNewNoti = 0;
+        resData.map((data) => {
+            if (data.read === "0") {
+                countNewNoti += 1;
+            }
+        })
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
@@ -415,9 +433,9 @@ const check_new_version = async (req, res) => {
                 },
                 user: {
                     id: _id,
-                    active: active,
+                    active: active.toString(),
                 },
-                badge: 'thong bao chua doc',
+                badge: (countNewNoti >= 100) ? countNewNoti = "99+" : countNewNoti.toString(),
                 unread_message: 'tin nhan chua doc',
                 now: versionData[0].version,
             },
