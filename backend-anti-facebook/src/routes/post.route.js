@@ -15,6 +15,8 @@ router.post('/search', isAuth, postController.search);
 router.post('/get_saved_search', isAuth, postController.get_saved_search);
 router.post('/del_saved_search', isAuth, postController.del_saved_search);
 
+// router.post("/like", postController.like);
+// router.post("/check_new_item", fiveController.checkNewItem);
 
 
 module.exports = router;

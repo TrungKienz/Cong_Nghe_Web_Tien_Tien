@@ -18,3 +18,6 @@ module.exports.MAXIMUM_NUMBER_OF_IMAGES = 'Maximum number of images';
 module.exports.NOT_ACCESS = 'Not access';
 module.exports.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER =
     'Action has been done previously by this user';
+module.exports.COULD_NOT_PUBLISH_THIS_POST = "Could not publish this post";
+module.exports.LIMITED_ACCESS = "Limited access";
+module.exports.NOT_ENOUGHT_COINS = "Not enough coins";

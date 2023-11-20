@@ -36,7 +36,7 @@ const deletePostAll = async (req, res) => {
 };
 
 const addPost = async (req, res) => {
-    const { token, described, state, can_edit, status } = req.query;
+    const { described, state, status } = req.query;
     const { _id } = req.userDataPass;
     const images = req.files['image'];
     const video = req.files['video'];
@@ -122,7 +122,7 @@ const addPost = async (req, res) => {
             // data: newPost,
             data: {
                 id: newPost._id,
-                url: null,
+                url: '',
                 coins: updatedCoin,
             },
             // user: userData
@@ -980,6 +980,7 @@ const del_saved_search = async (req, res) => {
 const getListPosts = async (req, res) => {
     try {
         let {
+            last_id,
             user_id,
             index,
             count,
@@ -1052,9 +1053,15 @@ const getListPosts = async (req, res) => {
 
             resultData = [].concat(...result.friends.map(e => e.postIds));
         }
-
-        console.log("resultData.postIds.author", resultData)
         
+        var newItems = 0;
+
+        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
+
+        if (lastIdIndex !== -1) {
+            newItems = lastIdIndex;
+        }
+
 
         // Manipulate post data
         const resultArray = resultData.postIds
@@ -1119,7 +1126,7 @@ const getListPosts = async (req, res) => {
             message: statusMessage.OK,
             data: {
                 post: resultArray,
-                new_items: "2",
+                new_items: newItems.toString(),
                 last_id: resultData.postIds[0]._id,
             },
         });
