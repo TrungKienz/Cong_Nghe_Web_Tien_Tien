@@ -24,6 +24,8 @@ const userSchema = new mongoose.Schema({
     coins: Number,
     devtype: String,
     devtoken: String,
+    address: String,
+    created: Date,
     requestedFriends: [
         {
             author: {

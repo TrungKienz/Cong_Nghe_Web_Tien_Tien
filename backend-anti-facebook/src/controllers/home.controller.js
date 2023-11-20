@@ -2,7 +2,7 @@ const User = require('../models/user.model.js');
 const Notification = require('../models/notification.model.js');
 
 const formidableHelper = require('../helpers/formidable.helper');
-
+const { sameFriends } = require('../helpers/sameFriends.helper.js');
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
 const { checkNewNotification } = require('./notification.controller.js');
@@ -242,97 +242,90 @@ const setDevToken = async (req, res) => {
 };
 
 const getUserInfo = async (req, res) => {
-    const { token, user_id } = req.query;
+    const { user_id } = req.query;
     const { _id } = req.userDataPass;
+
     try {
-        // nếu tự xem thông tin của mình
-        if (user_id == _id || !user_id) {
-            console.log('trùng với id của user');
-            var userData = await User.findById(_id).populate({
-                path: 'friends',
-                select: '_id username created description avatar cover_image link address city country listing is_friend online coins',
-            });
-            var listing = userData.friends.length;
-            userData.listing = listing;
+        // Check if viewing own profile or other user's profile
+        if (!user_id || user_id === _id) {
+            const userData = await User.findById(_id)
+                .populate({
+                    path: 'friends',
+                    select: '_id',
+                });
+
+            const listing = userData.friends.length;
+
+            const dataRes = {
+                id: userData._id || null,
+                username: userData.username || null,
+                created: userData.created || null,
+                description: userData.description || null,
+                avatar: userData.avatar || null,
+                cover_image: userData.cover_image || null,
+                link: userData.link || null,
+                address: userData.address || null,
+                city: userData.city || null,
+                country: userData.country || null,
+                listing: listing,
+                is_friend: "0",
+                online: "0",
+                coins: userData.coins || "0",
+            };
+
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
-                data: {
-                    id: userData._id ? userData._id : null,
-                    username: userData.username ? userData.username : null,
-                    created: userData.created ? userData.created : null,
-                    description: userData.description
-                        ? userData.description
-                        : null,
-                    avatar: userData.avatar ? userData.avatar : null,
-                    cover_image: userData.cover_image
-                        ? userData.cover_image
-                        : null,
-                    link: userData.link ? userData.link : null,
-                    address: userData.address ? userData.address : null,
-                    city: userData.city ? userData.city : null,
-                    country: userData.country ? userData.country : null,
-                    listing: userData.listing ? userData.listing : null,
-                    is_friend: userData.is_friend ? userData.is_friend : null,
-                    online: userData.online ? userData.online : null,
-                    coins: userData.coins ? userData.coins : null,
-                },
+                data: dataRes,
             });
         }
-        // nếu xem thông tin của người khác
-        try {
-            var otherUserData = await User.findById(user_id)
-                .select(
-                    'username created description avatar cover_image link address city country friends blockedIds is_blocked birthday'
-                )
-                .populate({
-                    path: 'friends',
-                    select: 'username avatar',
-                });
-        } catch (e) {
-            return res.status(500).json({
-                code: statusCode.USER_IS_NOT_VALIDATED,
-                message: statusMessage.USER_IS_NOT_VALIDATED,
+
+        // Viewing other user's profile
+        const otherUserData = await User.findById(user_id)
+            .select('_id username created description avatar cover_image link address city country friends blockedIds coins')
+            .populate({
+                path: 'friends',
+                select: '_id username avatar',
             });
+
+        if (!otherUserData || otherUserData.is_blocked || otherUserData.blockedIds.includes(_id)) {
+            throw new Error('notfound');
         }
-        if (
-            !otherUserData ||
-            otherUserData.is_blocked ||
-            otherUserData.blockedIds.includes(_id)
-        ) {
-            throw Error('notfound');
-        }
-        is_friend = req.userDataPass.friends.find((e) => e == user_id)
-            ? '1'
-            : '0';
-        sendRequested = req.userDataPass.sendRequestedFriends.find(
-            (e) => e.receiver == user_id
-        )
-            ? '1'
-            : '0';
-        requested = req.userDataPass.requestedFriends.find(
-            (e) => e.author == user_id
-        )
-            ? '1'
-            : '0';
+
+        const userData = await User.findById(_id);
+        const is_friend = userData.friends.includes(user_id) ? '1' : '0';
+
+        // const is_friend = req.userDataPass.friends.includes(user_id) ? '1' : '0';
+        console.log(is_friend)
+
         otherUserData.listing = otherUserData.friends.length;
-        var userData = req.userDataPass;
-        var result = await sameFriendsHelper.sameFriends(
-            userData.friends,
-            user_id
-        );
+
+        const dataRes = {
+            id: otherUserData._id || null,
+            username: otherUserData.username || null,
+            created: otherUserData.created || null,
+            description: otherUserData.description || null,
+            avatar: otherUserData.avatar || null,
+            cover_image: otherUserData.cover_image || null,
+            link: otherUserData.link || null,
+            address: otherUserData.address || null,
+            city: otherUserData.city || null,
+            country: otherUserData.country || null,
+            listing: otherUserData.listing,
+            is_friend: is_friend || "0",
+            online: "0",
+            coins: otherUserData.coins || "0",
+        };
+
         delete otherUserData.blockedIds;
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: otherUserData,
-            sameFriends: result.same_friends,
-            is_friend: is_friend,
-            sendRequested: sendRequested,
-            requested: requested,
+            data: dataRes,
         });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         if (error.message == 'notfound') {
             return res.status(500).json({
                 code: statusCode.USER_IS_NOT_VALIDATED,
@@ -346,6 +339,8 @@ const getUserInfo = async (req, res) => {
         }
     }
 };
+
+
 
 const setUserInfo = async (req, res) => {
     const {

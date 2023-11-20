@@ -108,7 +108,7 @@ const getMarkComment = async (req, res) => {
             data: {
                 mark: mappedMark,
                 comments: mappedComment,
-                is_blocked: postData.is_blocked || 'NO',
+                is_blocked: postData.is_blocked || '0',
             },
         });
     } catch (err) {
