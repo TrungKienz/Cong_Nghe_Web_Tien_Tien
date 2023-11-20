@@ -29,7 +29,7 @@ const logout = async (req, res) => {
 };
 
 const changeInfoAfterSignup = async (req, res) => {
-    const { _id } = req.userDataPass;
+    const { _id, email } = req.userDataPass;
     const { username } = req.query;
     // username
     const avatar = req.files['avatar'];
@@ -78,7 +78,7 @@ const changeInfoAfterSignup = async (req, res) => {
                     data: {
                         id: _id,
                         username: username,
-                        email: username,
+                        email: email,
                         created: Date(timeCurrent),
                         avatar: result.url,
                     },
@@ -90,7 +90,7 @@ const changeInfoAfterSignup = async (req, res) => {
                     data: {
                         id: _id,
                         username: username,
-                        email: username,
+                        email: email,
                         created: Date(timeCurrent),
                         avatar: req.userDataPass.avatar,
                     },

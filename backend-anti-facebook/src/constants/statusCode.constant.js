@@ -17,3 +17,6 @@ module.exports.UPLOAD_FILE_FAILED = 1007;
 module.exports.MAXIMUM_NUMBER_OF_IMAGES = 1008;
 module.exports.NOT_ACCESS = 1009;
 module.exports.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER = 1010;
+module.exports.COULD_NOT_PUBLISH_THIS_POST = 1011;
+module.exports.LIMITED_ACCESS = 1012;
+module.exports.NOT_ENOUGHT_COINS = 9991

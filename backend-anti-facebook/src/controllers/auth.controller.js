@@ -82,7 +82,7 @@ const signup = async (req, res) => {
                     const user = await new User({
                         email: email,
                         password: hashedPassword,
-                        active: -1,
+                        active: 0,
                         coins: 10,
                         created: Date.now(),
                         verifyCode: verifyCode.toString(),
@@ -174,10 +174,9 @@ const login = async (req, res) => {
                                 id: userData._id,
                                 username: userData.email,
                                 token: accessToken,
-                                // refreshToken: refreshToken, // chưa cần dùng
-                                avatar: userData.avatar,
-                                active: userData.active,
-                                coins: userData.coins,
+                                avatar: userData.avatar || "-1",
+                                active: userData.active.toString(),
+                                coins: userData.coins.toString(),
                             },
                         });
                     } else {
@@ -233,16 +232,14 @@ const getVerifyCode = async (req, res) => {
             message: statusMessage.PARAMETER_VALUE_IS_INVALID,
         });
     } else {
-        //neu duoi 120s khi da gui request nay thi bao loi 1010 1009
-
-        //Nguoi dung truyền tham số với số điện thoại chưa được đăng ký.
         const userData = await User.findOne({ email: email });
+
         if (userData) {
-            if (userData.active == 1) {
+            if (userData.active === 1) {
                 return res.status(200).json({
-                    code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                    code: statusCode.PARAMETER_VALUE_IS_INVALID,
                     message:
-                        statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                        statusMessage.PARAMETER_VALUE_IS_INVALID,
                 });
             }
             const verifyCode = generateRandom6DigitNumber();
@@ -252,9 +249,9 @@ const getVerifyCode = async (req, res) => {
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
-                // data: {
-                //     code_verify: userData.verifyCode,
-                // },
+                data: {
+                    code_verify: userData.verifyCode,
+                },
             });
         } else {
             return res.status(200).json({
@@ -280,11 +277,17 @@ const checkVerifyCode = async (req, res) => {
             message: statusMessage.PARAMETER_VALUE_IS_INVALID,
         });
     } else {
-        //neu duoi 120s khi da gui request nay thi bao loi 1010 1009
         const userData = await User.findOne({ email: email });
         if (userData) {
             const verifyCode = userData.verifyCode;
             if (verifyCode && verifyCode == code_verify) {
+                if (userData.active === 1) {
+                    return res.status(200).json({
+                        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+                    });
+                }
+
                 const accessToken = await jwtHelper.generateToken(
                     { _id: userData._id, email: userData.email },
                     accessTokenSecret,
@@ -306,7 +309,7 @@ const checkVerifyCode = async (req, res) => {
                     data: {
                         token: accessToken,
                         id: userData._id,
-                        active: 1,
+                        active: "1",
                     },
                 });
             } else {
