@@ -225,6 +225,10 @@ const getPost = async (req, res) => {
                     path: 'poster',
                     select: 'username avatar',
                 },
+            })
+            .populate({
+                path: 'mark_list',
+                select: 'type'
             });
 
         console.log("POST: ", post)
@@ -234,6 +238,22 @@ const getPost = async (req, res) => {
         }
 
         const author = await User.findOne({ _id: post.author?._id });
+        const userData = await User.findById(_id);
+
+        var canMark;
+        if (userData.mark_list.includes(id)){
+            canMark = "0";
+        }
+
+        var isMarked;
+        if (userData.mark_list.includes(id)) {
+            isMarked = "0";
+        }
+
+        var canRate;
+        if (userData.mark_list.includes(id)) {
+            canRate = "-5";
+        }
 
         // Response Handling
         var responseData = {
@@ -244,13 +264,15 @@ const getPost = async (req, res) => {
             modified: post.modified,
             fake: "0",
             trust: "0",
+            kudos: post.kudos_list.length.toString(),
+            disappointed: post.disappointed_list.length.toString(),
             is_rated: "0",
-            is_marked: "0",
+            is_marked: isMarked || "1",
             image: [],
             video: {},
             author: {
                 id: author._id,
-                username: author.username,
+                name: author.username,
                 avatar: author.avatar,
                 coins: (author.coins).toString(),
                 listing: author.postIds.map((postId) => ({ postId })),
@@ -260,10 +282,15 @@ const getPost = async (req, res) => {
                 name: post.described,
                 has_name: "0",
             },
-            state: post.state,
+            state: post.state || "public",
             is_blocked: "0",
             can_edit: "0",
-            banned: "0",
+            banned: post.banned || "0",
+            can_mark: canMark || "1",
+            can_rate: canRate || "1",
+            url: "",
+            messages: canMark == -5 ? "Khong duoc mark":
+                    canRate == -5 ? "Khong duoc rate" : "",
         };
 
         console.log(post.image)
