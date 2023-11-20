@@ -597,20 +597,20 @@ const feel = async (req, res) => {
             postDataPre.disappointed_list?.includes(_id) ||
             postDataPre.kudos_list?.includes(_id)
         ) {
-            // return res.status(200).json({
-            //   code: statusCode.OK,
-            //   message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-            // });
             return res.status(200).json({
-                code: statusCode.OK,
-                message: statusMessage.OK,
-                data: {
-                    disappointed: postDataPre.disappointed
-                        ? postDataPre.disappointed
-                        : 0,
-                    kudos: postDataPre.kudos ? postDataPre.kudos : 0,
-                },
+              code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+              message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
             });
+            // return res.status(200).json({
+            //     code: statusCode.OK,
+            //     message: statusMessage.OK,
+            //     data: {
+            //         disappointed: postDataPre.disappointed
+            //             ? postDataPre.disappointed
+            //             : 0,
+            //         kudos: postDataPre.kudos ? postDataPre.kudos : 0,
+            //     },
+            // });
         }
 
         let updateFields = {};
@@ -634,10 +634,8 @@ const feel = async (req, res) => {
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    disappointed: postData.disappointed
-                        ? postData.disappointed
-                        : 0,
-                    kudos: postData.kudos ? postData.kudos : 0,
+                    disappointed: type == 0 ? "1" : "0",
+                    kudos: type == 1 ? "1" : "0",
                 },
             });
         } else {
