@@ -361,6 +361,7 @@ const getPost = async (req, res) => {
 const editPost = async (req, res) => {
     const { id, described, status, state, image_del, image_sort, auto_accept } =
         req.query;
+    const { _id } = req.userDataPass;
 
     try {
         console.log(image_del, image_del.length, typeof image_del);
@@ -399,6 +400,13 @@ const editPost = async (req, res) => {
                     code: statusCode.OK,
                     message: 'Not enough coin',
                 });
+            }
+            
+            if (postData.author.toString() !== _id.toString()) {
+                return res.status(200).json({
+                    code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                    message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+                })
             }
 
             if (described) {
@@ -449,22 +457,29 @@ const editPost = async (req, res) => {
                 await postData.save();
             }
             if (isPostOverOneDay == true) {
+                // authorData.coins = currentCoin - 4;
+                // authorData.save();
+                // return res.status(200).json({
+                //     code: statusCode.OK,
+                //     message: statusMessage.OK,
+                //     coins: currentCoin - 4,
+                // });
+                return res.status(200).json({
+                    code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                    message: "Can not edit this post",
+                });
+            } else {
+                // return res.status(200).json({
+                //     code: statusCode.OK,
+                //     message: statusMessage.OK,
+                //     coins: currentCoin,
+                // });
                 authorData.coins = currentCoin - 4;
                 authorData.save();
                 return res.status(200).json({
                     code: statusCode.OK,
-                    message: {
-                        coins: currentCoin - 4,
-                    },
-                });
-            } else {
-                return res.status(200).json({
-                    code: statusCode.OK,
-                    // message: {
-                    //     coins: currentCoin,
-                    // },
                     message: statusMessage.OK,
-                    coins: currentCoin,
+                    coins: currentCoin - 4,
                 });
             }
         } catch (e) {
