@@ -243,6 +243,7 @@ const getVerifyCode = async (req, res) => {
                 });
             }
             const verifyCode = generateRandom6DigitNumber();
+            
             userData.verifyCode = verifyCode;
             await userData.save();
             emailValidate(email, verifyCode);
@@ -250,7 +251,7 @@ const getVerifyCode = async (req, res) => {
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    code_verify: userData.verifyCode,
+                    code_verify: userData.verifyCode.toString(),
                 },
             });
         } else {
@@ -307,7 +308,7 @@ const checkVerifyCode = async (req, res) => {
                     code: statusCode.OK,
                     message: statusMessage.OK,
                     data: {
-                        token: accessToken,
+                        // token: accessToken,
                         id: userData._id,
                         active: "1",
                     },
