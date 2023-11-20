@@ -6,53 +6,47 @@ const statusMessage = require('./../constants/statusMessage.constant.js');
 
 
 const checkNewItem = async (req, res) => {
-    const { last_id, category_id } = req.query;
-    const { _id } = req.userDataPass;
     try {
-        var result = await User.findById(_id).populate({
-            path: 'friends',
-            select: 'postIds',
-            populate: {
-                path: 'postIds',
-                // populate: {
-                //   path: "author",
-                //   select: "avatar username",
-                // },
-                options: {
-                    sort: {
-                        created: -1,
+        const { last_id, category_id } = req.query;
+        const { _id } = req.userDataPass;
+        const lastId = last_id || "0";
+
+        // Validate category_id
+        if (category_id <= 0 || category_id >= 3) {
+            throw new Error('PARAMETER_VALUE_IS_INVALID');
+        }
+
+        // Retrieve user's friends' posts sorted by created date
+        const result = await User.findById(_id)
+            .populate({
+                path: 'friends',
+                select: 'postIds',
+                populate: {
+                    path: 'postIds',
+                    options: {
+                        sort: { created: -1 },
                     },
                 },
-            },
-        });
-        var postRes = [];
-        result.friends.map((e, index) => {
-            postRes = postRes.concat(e.postIds);
-            // console.log(postRes)
-        });
-        function checkAdult(post) {
-            return post._id == last_id;
-        }
-        var findLastIndex = postRes.findIndex(checkAdult);
-        var new_items = 0;
-        var newLastIndex;
-        if (findLastIndex == -1) {
-            new_items = postRes.length;
-            // newLastIndex
-        } else {
-            new_items = findLastIndex;
-        }
+            });
+
+        // Flatten the array of postIds from friends
+        const postRes = result.friends.flatMap((friend) => friend.postIds);
+
+        // Find the index of the last_id in the flattened array
+        const findLastIndex = postRes.findIndex((post) => post._id === lastId);
+
+        // Calculate the number of new items
+        const new_items = (findLastIndex === -1) ? postRes.length : findLastIndex;
+
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                // posts: postRes.slice(index, index + count),
-                // last_id: postRes[0]._id,
-                new_items: new_items,
+                new_items,
             },
         });
     } catch (error) {
-        if (error.message == 'params') {
+        if (error.message === 'PARAMETER_VALUE_IS_INVALID') {
             return res.status(200).json({
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
@@ -65,6 +59,7 @@ const checkNewItem = async (req, res) => {
         }
     }
 };
+
 
 const getNotification = async (req, res) => {
     var { index, count } = req.query;
