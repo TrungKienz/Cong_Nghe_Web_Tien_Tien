@@ -84,6 +84,7 @@ const signup = async (req, res) => {
                         password: hashedPassword,
                         active: -1,
                         coins: 10,
+                        created: Date.now(),
                         verifyCode: verifyCode.toString(),
                     });
                     const accessToken = await jwtHelper.generateToken(
