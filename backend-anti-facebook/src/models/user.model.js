@@ -91,11 +91,8 @@ const userSchema = new mongoose.Schema({
     ],
     notifications: [
         {
-            id: {
-                type: Schema.Types.ObjectId,
-                ref: 'notification',
-            },
-            read: String,
+            type: Schema.Types.ObjectId,
+            ref: 'notification',
         },
     ],
     not_suggest: [
