@@ -36,7 +36,7 @@ const deletePostAll = async (req, res) => {
 };
 
 const addPost = async (req, res) => {
-    const { described, state, status } = req.query;
+    const { token, described, state, can_edit, status } = req.query;
     const { _id } = req.userDataPass;
     const images = req.files['image'];
     const video = req.files['video'];
@@ -122,7 +122,7 @@ const addPost = async (req, res) => {
             // data: newPost,
             data: {
                 id: newPost._id,
-                url: '',
+                url: null,
                 coins: updatedCoin,
             },
             // user: userData
@@ -793,14 +793,33 @@ const search = async (req, res) => {
                 sortedResults.push(result);
             }
         });
+        const mapResult = (element) => {
+            return {
+              id: element._id,
+              name: element.described,
+              image: element.image.map((elementImage) => ({
+                url: elementImage.url,
+              })),
+              video: element.video,
+              feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
+              mark_comment: (element.comment_list.length + element.mark_list.length).toString(),
+              is_felt: "0",
+              author: {
+                id: element.author.id,
+                username: element.author.username,
+                avatar: element.author.avatar,
+              },
+              described: element.described,
+            };
+          };
 
         // Trả về kết quả đã được sắp xếp
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                id: _id,
-                results: sortedResults,
+                
+                i: sortedResults.map(mapResult),
             },
         });
 
@@ -980,7 +999,6 @@ const del_saved_search = async (req, res) => {
 const getListPosts = async (req, res) => {
     try {
         let {
-            last_id,
             user_id,
             index,
             count,
@@ -1053,15 +1071,9 @@ const getListPosts = async (req, res) => {
 
             resultData = [].concat(...result.friends.map(e => e.postIds));
         }
+
+        console.log("resultData.postIds.author", resultData)
         
-        var newItems = 0;
-
-        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
-
-        if (lastIdIndex !== -1) {
-            newItems = lastIdIndex;
-        }
-
 
         // Manipulate post data
         const resultArray = resultData.postIds
@@ -1126,7 +1138,7 @@ const getListPosts = async (req, res) => {
             message: statusMessage.OK,
             data: {
                 post: resultArray,
-                new_items: newItems.toString(),
+                new_items: "2",
                 last_id: resultData.postIds[0]._id,
             },
         });
