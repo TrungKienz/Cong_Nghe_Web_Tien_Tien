@@ -144,70 +144,56 @@ const getMarkComment = async (req, res) => {
 
 const setMarkComment = async (req, res) => {
     try {
-        var { id, content, index, count, mark_id, type } = req.query;
+        const { id, content, index, count, mark_id, type } = req.query;
         const { _id } = req.userDataPass;
 
         // Default values for index and count
-        index = index || 0;
-        count = count || 20;
+        const parsedIndex = Number(index);
+        const parsedCount = Number(count);
 
         // Find the post
-        const result = await Post.findOne({ _id: id });
+        const post = await Post.findOne({ _id: id });
 
         // Check if the post exists
-        if (!result) {
+        if (!post) {
             throw new Error('notfound');
         }
 
         // Check if the post is blocked
-        if (result.is_blocked) {
+        if (post.is_blocked) {
             throw new Error('action');
         }
 
         // Check if the author is blocked
-        const authorData = await User.findOne({ _id: result.author });
+        const authorData = await User.findOne({ _id: post.author });
         if (authorData.blockedIds.includes(String(_id))) {
             throw new Error('blocked');
         }
 
         // Check if the user has blocked the author
-        const userData = await User.findOne({ _id: _id });
-        if (userData.blockedIds.includes(String(result.author))) {
+        const userData = await User.findOne({ _id });
+        if (userData.blockedIds.includes(String(post.author))) {
             throw new Error('notaccess');
         }
+
+        let resultData;
 
         if (mark_id && (type === '1' || type === '0')) {
             // Create and save a new mark
             const newMark = await Mark.create({
                 poster: _id,
-                mark_id: mark_id,
-                content: content,
+                mark_id,
+                content,
                 created: Date.now(),
-                type: type,
+                type,
             });
 
             // Add the new mark to the post's mark_list
-            result.mark_list.push(newMark._id);
-            await result.save();
+            post.mark_list.push(newMark._id);
+            await post.save();
 
             // Populate the post information with the new mark
-            const postInfor = await Post.findOne({ _id: id }).populate({
-                path: 'mark_list',
-                options: { sort: { created: -1 } },
-                populate: {
-                    path: 'poster',
-                    select: '_id avatar username',
-                },
-            });
-
-            return res.status(200).json({
-                code: statusCode.OK,
-                message: statusMessage.OK,
-                data: postInfor.mark_list.slice(
-                    Number(index),
-                    Number(index) + Number(count)
-                ),
-            });
+            resultData = await populatePostInformation(id);
         } else if (mark_id || type) {
             return res.status(200).json({
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
@@ -217,66 +203,84 @@ const setMarkComment = async (req, res) => {
             // Create and save a new comment
             const newComment = await Comment.create({
                 poster: _id,
-                content: content,
+                content,
                 created: Date.now(),
             });
 
             // Add the new comment to the post's comment_list
-            result.comment_list.push(newComment._id);
-            await result.save();
+            post.comment_list.push(newComment._id);
+            await post.save();
 
             // Populate the post information with the new comment
-            const postInfor = await Post.findOne({ _id: id }).populate({
-                path: 'comment_list',
-                options: { sort: { created: -1 } },
-                populate: {
-                    path: 'poster',
-                    select: '_id avatar username',
-                },
-            });
-            // Kệ cho Hùng code ở đây
-            return res.status(200).json({
-                code: statusCode.OK,
-                message: statusMessage.OK,
-                data: postInfor.comment_list.slice(
-                    Number(index),
-                    Number(index) + Number(count)
-                ),
-            });
+            resultData = await populatePostInformation(id);
         }
+
+        const { mark_list, comment_list } = resultData;
+
+        const resMark = mark_list.slice(parsedIndex, parsedIndex + parsedCount);
+        const resComment = comment_list.slice(parsedIndex, parsedIndex + parsedCount);
+
+        return res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: {
+                mark: resMark,
+                comment: resComment,
+            },
+        });
     } catch (error) {
         console.error(error);
 
         // Handle errors and return appropriate responses
-        if (error.message === 'params') {
-            return res.status(200).json({
+        const errorResponses = {
+            params: {
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-            });
-        } else if (error.message === 'notfound') {
-            return res.status(200).json({
+            },
+            notfound: {
                 code: statusCode.POST_IS_NOT_EXISTED,
                 message: statusMessage.POST_IS_NOT_EXISTED,
-            });
-        } else if (error.message === 'action') {
-            return res.status(200).json({
+            },
+            action: {
                 code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-                message:
-                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-            });
-        } else if (error.message === 'blocked') {
-            return res.status(200).json({
+                message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+            },
+            blocked: {
                 code: statusCode.NOT_ACCESS,
                 message: statusMessage.NOT_ACCESS,
-            });
-        } else {
-            return res.status(200).json({
+            },
+            default: {
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
-            });
-        }
+            },
+        };
+
+        const response = errorResponses[error.message] || errorResponses.default;
+
+        return res.status(200).json(response);
     }
 };
+
+async function populatePostInformation(id) {
+    return await Post.findOne({ _id: id })
+        .populate({
+            path: 'mark_list',
+            options: { sort: { created: -1 } },
+            populate: {
+                path: 'poster',
+                select: '_id avatar username',
+            },
+        })
+        .populate({
+            path: 'comment_list',
+            options: { sort: { created: -1 } },
+            populate: {
+                path: 'poster',
+                select: '_id avatar username',
+            },
+        });
+}
+
 
 module.exports = {
     getMarkComment,

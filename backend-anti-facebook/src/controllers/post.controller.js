@@ -189,19 +189,31 @@ const removeAscent = (str) => {
 };
 
 const getPost = async (req, res) => {
-    const { token, id } = req.query;
-    const { _id } = req.userDataPass;
     try {
-        if (!id) {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
-                message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+        const { token, id } = req.query;
+        const { _id } = req.userDataPass;
+
+        // Input Validation
+        if (!_id) {
+            console.log("Invalid user ID");
+            return res.status(400).json({
+                code: statusCode.INVALID_USER_ID,
+                message: statusMessage.INVALID_USER_ID,
             });
         }
-        var result = await Post.findOne({ _id: id })
+
+        if (!id) {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGH,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGH,
+            });
+        }
+
+        // Database Query
+        const post = await Post.findOne({ _id: id })
             .populate({
                 path: 'author',
-                select: '_id username avatar',
+                select: '_id username avatar coins blockedIds',
             })
             .populate({
                 path: 'like_list',
@@ -214,170 +226,110 @@ const getPost = async (req, res) => {
                     select: 'username avatar',
                 },
             });
-        const idAuthor = result.author._id;
-        if (!result || result.is_blocked) {
-            // không tìm thấy bài viết hoặc vi phạm tiêu chuẩn cộng đồng
-            throw Error('POST_IS_NOT_EXISTED');
+
+        console.log("POST: ", post)
+        // Post Validation
+        if (!post || post.is_blocked) {
+            throw new Error('POST_IS_NOT_EXISTED');
         }
-        var resultUser = await User.findOne({ _id: idAuthor });
-        console.log(resultUser.postIds);
-        if (resultUser.blockedIds.includes(_id)) {
+
+        const author = await User.findOne({ _id: post.author?._id });
+
+        // Response Handling
+        var responseData = {
+            id: post._id,
+            name: post.name || post.described,
+            created: post.created,
+            described: post.described,
+            modified: post.modified,
+            fake: "0",
+            trust: "0",
+            is_rated: "0",
+            is_marked: "0",
+            image: [],
+            video: {},
+            author: {
+                id: author._id,
+                username: author.username,
+                avatar: author.avatar,
+                coins: (author.coins).toString(),
+                listing: author.postIds.map((postId) => ({ postId })),
+            },
+            category: {
+                id: post._id,
+                name: post.described,
+                has_name: "0",
+            },
+            state: post.state,
+            is_blocked: "0",
+            can_edit: "0",
+            banned: "0",
+        };
+
+        console.log(post.image)
+
+        if (post.image && post.image.length > 0) {
+            responseData.image = post.image.map((image) => ({
+                id: image._id,
+                url: image.url,
+            }));
+        } else if (post.video) {
+            responseData.video = {
+                // id: post.video._id,
+                url: post.video.url,
+                thumb: post.video.thumb || null,
+            };
+        }
+        // Check can edit
+        const postDate = new Date(post.created);
+        const currentDate = Date.now();
+        const oneDayInMillis = 24 * 60 * 60 * 1000;
+
+        var isPostOverOneDay = false;
+
+        if (currentDate - postDate > oneDayInMillis) {
+            isPostOverOneDay = true;
+        }
+
+        if (isPostOverOneDay === true && post.author.coins >= 4) {
+            responseData.can_edit = "1";
+        } else if (isPostOverOneDay === false) {
+            responseData.can_edit = "1";
+        }
+
+        // User Blocking Check
+        if (author.blockedIds?.includes(_id)) {
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    isblocked: 1,
+                    isBlocked: true,
                 },
             });
-        } else {
-            if (result.image) {
-                return res.status(200).json({
-                    code: statusCode.OK,
-                    message: statusMessage.OK,
-                    // data: result,
-                    data: {
-                        id: result._id,
-                        name: null,
-                        created: result.created,
-                        described: result.described,
-                        modified: result.modified,
-                        fake: null,
-                        trust: null,
-                        kudos: null,
-                        disappointed: null,
-                        is_rated: null,
-                        is_masked: null,
-                        image: result.image?.map((image) => ({
-                            id: image._id,
-                            url: image.url,
-                        })),
-                        author: {
-                            id: resultUser._id,
-                            name: resultUser.username,
-                            avatar: resultUser.avatar,
-                            coins: resultUser.coins,
-                            listing: resultUser.postIds.map((postId) => ({
-                                postId: postId,
-                            })),
-                        },
-                        // category: {
-                        //   id: result.category._id,
-                        //   name: result.category.name,
-                        //   has_name: result.category.has_name,
-                        // },
-                        state: result.state,
-                        is_blocked: result.is_blocked,
-                        can_edit: null,
-                        banned: null,
-                        can_mask: null,
-                        can_rate: null,
-                        url: null,
-                        message: null,
-                    },
-                });
-            } else if (result.video) {
-                return res.status(200).json({
-                    code: statusCode.OK,
-                    message: statusMessage.OK,
-                    // data: result,
-                    data: {
-                        id: result._id,
-                        name: null,
-                        created: result.created,
-                        described: result.described,
-                        modified: result.modified,
-                        fake: null,
-                        trust: null,
-                        kudos: null,
-                        disappointed: null,
-                        is_rated: null,
-                        is_masked: null,
-                        video: result.video?.map((video) => ({
-                            id: video._id,
-                            url: video.url,
-                        })),
-                        author: {
-                            id: resultUser._id,
-                            name: resultUser.name,
-                            avatar: resultUser.avatar,
-                            coins: resultUser.coins,
-                            listing: resultUser.postIds.map((postId) => ({
-                                postId: postId,
-                            })),
-                        },
-                        // category: {
-                        //   id: result.category._id,
-                        //   name: result.category.name,
-                        //   has_name: result.category.has_name,
-                        // },
-                        state: result.state,
-                        is_blocked: result.is_blocked,
-                        can_edit: null,
-                        banned: null,
-                        can_mask: null,
-                        can_rate: null,
-                        url: null,
-                        message: null,
-                    },
-                });
-            } else {
-                return res.status(200).json({
-                    code: statusCode.OK,
-                    message: statusMessage.OK,
-                    // data: result,
-                    data: {
-                        id: result._id,
-                        name: null,
-                        created: result.created,
-                        described: result.described,
-                        modified: result.modified,
-                        fake: null,
-                        trust: null,
-                        kudos: null,
-                        disappointed: null,
-                        is_rated: null,
-                        is_masked: null,
-                        author: {
-                            id: resultUser._id,
-                            name: resultUser.name,
-                            avatar: resultUser.avatar,
-                            coins: resultUser.coins,
-                            listing: resultUser.postIds.map((postId) => ({
-                                postId: postId,
-                            })),
-                        },
-                        // category: {
-                        //   id: result.category._id,
-                        //   name: result.category.name,
-                        //   has_name: result.category.has_name,
-                        // },
-                        state: result.state,
-                        is_blocked: result.is_blocked,
-                        can_edit: null,
-                        banned: null,
-                        can_mask: null,
-                        can_rate: null,
-                        url: null,
-                        message: null,
-                    },
-                });
-            }
         }
-        // }
+
+        return res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: responseData,
+        });
+
     } catch (error) {
-        if (error.message == 'POST_IS_NOT_EXISTED') {
-            return res.status(200).json({
-                code: statusCode.POST_IS_NOT_EXISTED,
-                message: statusMessage.POST_IS_NOT_EXISTED,
+        if (error.message === 'POST_IS_NOT_EXISTED') {
+            return res.status(404).json({
+                code: statusCode.POST_NOT_FOUND,
+                message: statusMessage.POST_NOT_FOUND,
             });
         } else {
-            return res.status(200).json({
+            console.error(error);
+            return res.status(500).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
             });
         }
     }
 };
+
 
 const editPost = async (req, res) => {
     const { id, described, status, state, image_del, image_sort, auto_accept } =
@@ -1025,9 +977,179 @@ const delSavedSearch = async (req, res) => {
     }
 };
 
+const getListPosts = async (req, res) => {
+    try {
+        let {
+            user_id,
+            index,
+            count,
+        } = req.query;
+
+        // Parameter validation
+        if (!index || !count) {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGH,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGH,
+            });
+        }
+
+        // Parse index and count to ensure they are integers
+        index = parseInt(index);
+        count = parseInt(count);
+
+        if (isNaN(index) || isNaN(count) || index < 0 || count < 0) {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        }
+
+        // Default values for index and count
+        index = index || 0;
+        count = count || 20;
+
+        // Fetch posts based on user_id or user's friends
+        let resultData;
+
+        if (user_id) {
+            resultData = await User.findById(user_id).populate({
+                path: 'postIds',
+                populate: {
+                    path: 'author',
+                    select: 'username avatar',
+                    populate: {
+                        path: 'comment_list',
+                        populate: {
+                            path: 'poster',
+                            select: 'username avatar',
+                        },
+                    },
+                },
+                options: {
+                    sort: {
+                        created: -1,
+                    },
+                },
+            });
+
+        } else {
+            const result = await User.findById(req.userDataPass._id).populate({
+                path: 'friends',
+                select: 'postIds',
+                populate: {
+                    path: 'postIds',
+                    populate: {
+                        path: 'author',
+                        select: 'avatar username coins',
+                    },
+                    options: {
+                        sort: {
+                            created: -1,
+                        },
+                    },
+                },
+            });
+
+            resultData = [].concat(...result.friends.map(e => e.postIds));
+        }
+
+        console.log("resultData.postIds.author", resultData)
+        
+
+        // Manipulate post data
+        const resultArray = resultData.postIds
+        .slice(index, index + count)
+        .map(element => {
+            // Check if the author is blocked
+            var is_blocked;
+            if (resultData.blockedIds?.includes(element._id)) {
+                is_blocked = "1";
+            } else {
+                is_blocked = "0";
+            }
+
+            // Check can edit
+            const postDate = new Date(resultData.created);
+            const currentDate = Date.now();
+            const oneDayInMillis = 24 * 60 * 60 * 1000;
+
+            var isPostOverOneDay = false;
+
+            if (currentDate - postDate > oneDayInMillis) {
+                isPostOverOneDay = true;
+            }
+
+            var can_edit;
+            if (isPostOverOneDay === true && resultData.coins >= 4){
+                can_edit = "1";
+            } else if (isPostOverOneDay === false) {
+                can_edit = "1";
+            } else {
+                can_edit = "0";
+            }
+
+            // Construct the post object
+            return {
+                id: element._id,
+                name: element.described,
+                image: element.image.map((elementImage) => ({
+                    url: elementImage.url, 
+                })),
+                video: element.video,  
+                described: element.described,
+                created: element.created,
+                feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
+                comment_mark: (element.comment_list.length + element.mark_list.length).toString(),
+                is_felt: "0",
+                is_blocked: is_blocked,
+                can_edit: can_edit,
+                banned: "0",
+                status: element.status,
+                author: {
+                    id: element.author.id,
+                    username: element.author.username,
+                    avatar: element.author.avatar,
+                },
+            };
+        });
+
+
+        return res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: {
+                post: resultArray,
+                new_items: "2",
+                last_id: resultData.postIds[0]._id,
+            },
+        });
+
+    } catch (error) {
+        if (error.message === 'params') {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        } else if (error.message === 'nodata') {
+            return res.status(404).json({
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+            });
+        } else {
+            console.error(error);
+            return res.status(500).json({
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
+            });
+        }
+    }
+};
+
+
 module.exports = {
     addPost,
     getPost,
+    getListPosts,
     editPost,
     deletePost,
     reportPost,

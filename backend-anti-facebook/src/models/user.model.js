@@ -63,8 +63,11 @@ const userSchema = new mongoose.Schema({
     active: Number,
     friends: [
         {
-            type: Schema.Types.ObjectId,
-            ref: 'user',
+            author: {
+                type: Schema.Types.ObjectId,
+                ref: 'user',
+            },
+            created: Date,
         },
     ],
     settings: {

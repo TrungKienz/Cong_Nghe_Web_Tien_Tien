@@ -5,6 +5,7 @@ const postController = require('../controllers/post.controller.js');
 const { isAuth } = require('../middlewares/auth.middleware.js');
 
 router.post('/add_post', isAuth, postController.addPost);
+router.post('/get_list_posts', isAuth, postController.getListPosts);
 router.post('/get_post', isAuth, postController.getPost);
 router.post('/edit_post', isAuth, postController.editPost);
 router.post('/delete_post', isAuth, postController.deletePost);
