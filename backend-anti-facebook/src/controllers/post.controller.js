@@ -1290,6 +1290,9 @@ const getListVideo = async (req, res) => {
         // Manipulate post data
         const resultArray = resultData.postIds
         .slice(index, index + count)
+        .filter(element => {
+            return element.video != "{}"
+        })
         .map(element => {
             // Check if the author is blocked
             var is_blocked;
@@ -1318,7 +1321,7 @@ const getListVideo = async (req, res) => {
             } else {
                 can_edit = "0";
             }
-            if (element.video == "{}") {return;}
+            //if (element.video == "{}") {return;}
             
 
 
@@ -1345,7 +1348,8 @@ const getListVideo = async (req, res) => {
                     avatar: element.author.avatar,
                 },
             };
-        });
+        })
+        ;
 
 
         return res.status(200).json({
