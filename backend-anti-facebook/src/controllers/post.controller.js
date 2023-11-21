@@ -845,7 +845,7 @@ const search = async (req, res) => {
               mark_comment: (element.comment_list.length + element.mark_list.length).toString(),
               is_felt: "0",
               author: {
-                id: element.author.id,
+                id: element.author.id.toString(),
                 username: element.author.username,
                 avatar: element.author.avatar,
               },
