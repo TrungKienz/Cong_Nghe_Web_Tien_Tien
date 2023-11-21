@@ -349,6 +349,8 @@ const getListOfUserFriends = async (req, res) => {
 
         let targetId = user_id ? user_id : _id; //Get friends list from either user or provided user_id
         let user = await User.findOne({ _id: targetId });
+        const blockedList = user.blockedIds.toObject()
+        console.log(blockedList)
 
         let arr = user.friends.toObject();
         arr.forEach((request) => {
@@ -363,10 +365,20 @@ const getListOfUserFriends = async (req, res) => {
             let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select(
                 'username avatar friends'
             );
+
             const same_friends_count = count_same_friends(_userInfo, user, );
             _userInfo = _userInfo.toObject();
+            
+            
+            
             _userInfo.created = infoArr[i].created;
             _userInfo.id = _userInfo._id.toString()
+            
+            
+            // console.log(check_array_contains(blockedList, _userInfo.id))
+            // if (check_array_contains(blockedList, _userInfo.id)){
+            //     return
+            // }
             _userInfo.same_friends = same_friends_count;
             delete _userInfo._id
             delete _userInfo.friends;
@@ -377,7 +389,14 @@ const getListOfUserFriends = async (req, res) => {
                 same_friends: _userInfo.same_friends.toString(),
                 created: _userInfo.created
             }
-            newList.push(_formatted);
+            blockedList.forEach(element => {
+                console.log()
+                if (element != _userInfo.id)
+                {
+                    newList.push(_formatted);
+                }
+            });
+            
         }
         //#endregion
 
