@@ -29,7 +29,8 @@ const addFriend = async (req, res) => {
                     ' - User cannot send request to themself',
             };
         }
-        let totalRequestsSent = 0;
+        let totalRequestsSent = -1;
+
 
         //#endregion
 
@@ -93,6 +94,10 @@ const addFriend = async (req, res) => {
         //targetData.requestedFriends.push(_id) // Save received friend request
         //targetData.requestedFriends.pop()
         //#endregion
+        while (totalRequestsSent == -1) {
+            console.log("Sleep")
+            await sleep(500)
+        }
 
         return res.status(200).json({
             code: statusCode.OK,
@@ -172,7 +177,13 @@ const getListOfFriendSuggestions = async (req, res) => {
             if (user._id.toString() != _id.toString() && check_array_contains(ownerFriendsList, user._id.toString()) == false) {
                 //Exclude the user's id
                 delete user._id
-                newList.push(user);
+                const _formatted = {
+                    user_id : user.user_id,
+                    username: user.username,
+                    avatar: user.avatar,
+                    same_friends: user.same_friends
+                }
+                newList.push(_formatted);
             }
         });
         //#endregion
@@ -352,7 +363,14 @@ const getListOfUserFriends = async (req, res) => {
             _userInfo.same_friends = same_friends_count;
             delete _userInfo._id
             delete _userInfo.friends;
-            newList.push(_userInfo);
+            const _formatted = {
+                id: _userInfo.id,
+                username: _userInfo.username,
+                avatar: _userInfo.avatar,
+                same_friends: _userInfo.same_friends,
+                created: _userInfo.created
+            }
+            newList.push(_formatted);
         }
         //#endregion
 
@@ -432,12 +450,18 @@ const getListOfBlockedUsers = async (req, res) => {
             let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select(
                 'username avatar friends'
             );
-            const same_friends_count = count_same_friends(_userInfo, user);
+            //const same_friends_count = count_same_friends(_userInfo, user);
             _userInfo = _userInfo.toObject();
             _userInfo.created = infoArr[i].created;
-            _userInfo.same_friends = same_friends_count;
+            //_userInfo.same_friends = same_friends_count;
             delete _userInfo.friends;
-            newList.push(_userInfo);
+            const _formatted = {
+                id: _userInfo._id,
+                name: _userInfo.username,
+                avatar: _userInfo.avatar
+            }
+
+            newList.push(_formatted);
         }
         //#endregion
 
@@ -665,6 +689,12 @@ function changeTimeZone(date, timeZone) {
         })
     );
 }
+
+function sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
 
 //#endregion
 
