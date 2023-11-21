@@ -15,7 +15,7 @@ const checkNewItem = async (req, res) => {
         const lastId = last_id || "0";
 
         // Validate category_id
-        if (category_id <= 0 || category_id >= 3) {
+        if (category_id < 0 || category_id > 3) {
             throw new Error('PARAMETER_VALUE_IS_INVALID');
         }
 
