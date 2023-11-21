@@ -1039,6 +1039,7 @@ const getListPosts = async (req, res) => {
             user_id,
             index,
             count,
+            last_id,
         } = req.query;
 
         // Parameter validation
@@ -1111,6 +1112,13 @@ const getListPosts = async (req, res) => {
 
         console.log("resultData.postIds.author", resultData)
         
+        var newItems = 0;
+
+        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
+
+        if (lastIdIndex !== -1) {
+            newItems = lastIdIndex;
+        }
 
         // Manipulate post data
         const resultArray = resultData.postIds
@@ -1144,6 +1152,8 @@ const getListPosts = async (req, res) => {
                 can_edit = "0";
             }
 
+
+
             // Construct the post object
             return {
                 id: element._id,
@@ -1175,7 +1185,7 @@ const getListPosts = async (req, res) => {
             message: statusMessage.OK,
             data: {
                 post: resultArray,
-                new_items: "2",
+                new_items: newItems,
                 last_id: resultData.postIds[0]._id,
             },
         });

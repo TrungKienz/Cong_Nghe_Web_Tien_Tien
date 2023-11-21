@@ -1,5 +1,7 @@
 const User = require('../models/user.model.js');
 const Notification = require('../models/notification.model.js');
+const Post = require('../models/post.model.js');
+
 
 const formidableHelper = require('../helpers/formidable.helper');
 const { sameFriends } = require('../helpers/sameFriends.helper.js');
@@ -20,32 +22,31 @@ const checkNewItem = async (req, res) => {
         }
 
         // Retrieve user's friends' posts sorted by created date
-        const result = await User.findById(_id)
-            .populate({
-                path: 'friends',
-                select: 'postIds',
-                populate: {
-                    path: 'postIds',
-                    options: {
-                        sort: { created: -1 },
-                    },
-                },
-            });
+        const userData = await User.findById(_id).populate({
+            path: 'postIds',
+            select: '_id created',
+            options: {
+                created: -1,
+            },
+        })
 
-        // Flatten the array of postIds from friends
-        const postRes = result.friends.flatMap((friend) => friend.postIds);
-
-        // Find the index of the last_id in the flattened array
-        const findLastIndex = postRes.findIndex((post) => post._id === lastId);
-
-        // Calculate the number of new items
-        const new_items = (findLastIndex === -1) ? postRes.length : findLastIndex;
+        var newItems = 0;
+        console.log(userData.postIds.length)
+        const lastIdIndex = userData.postIds.findIndex(element => element._id == lastId);
+        console.log(lastIdIndex)
+        if (lastIdIndex !== -1) {
+            newItems = lastIdIndex;
+        } else if (lastId == 0){
+            newItems = userData.postIds.length;
+        } else {
+            throw Error('PARAMETER_VALUE_IS_INVALID')
+        }
 
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                new_items,
+                new_items: newItems,
             },
         });
     } catch (error) {
@@ -55,6 +56,7 @@ const checkNewItem = async (req, res) => {
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
             });
         } else {
+            console.log(error)
             return res.status(200).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
