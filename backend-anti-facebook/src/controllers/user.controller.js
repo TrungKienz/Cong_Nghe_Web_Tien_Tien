@@ -1,6 +1,7 @@
 // Cấu hình từng controller tương ứng
 const User = require('../models/user.model.js');
 const Version = require('../models/version.model.js');
+
 const cloudHelper = require('../helpers/cloud.helper.js');
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
@@ -29,7 +30,7 @@ const logout = async (req, res) => {
 };
 
 const changeInfoAfterSignup = async (req, res) => {
-    const { _id } = req.userDataPass;
+    const { _id, email } = req.userDataPass;
     const { username } = req.query;
     // username
     const avatar = req.files['avatar'];
@@ -78,7 +79,7 @@ const changeInfoAfterSignup = async (req, res) => {
                     data: {
                         id: _id,
                         username: username,
-                        email: username,
+                        email: email,
                         created: Date(timeCurrent),
                         avatar: result.url,
                     },
@@ -90,7 +91,7 @@ const changeInfoAfterSignup = async (req, res) => {
                     data: {
                         id: _id,
                         username: username,
-                        email: username,
+                        email: email,
                         created: Date(timeCurrent),
                         avatar: req.userDataPass.avatar,
                     },
@@ -129,7 +130,7 @@ const change_password = async (req, res) => {
             new_password.length > 10 ||
             new_password.match(/[^a-z|A-Z|0-9]/g)
         )
-            throw Error('NEW_PASSWORD_VALUE_IS_INVALID');
+            throw Error('PARAMETER_VALUE_IS_INVALID');
 
         if (password == new_password) throw Error('PARAMETER_VALUE_IS_INVALID');
 
@@ -138,7 +139,7 @@ const change_password = async (req, res) => {
 
         password = md5(password);
         if (password != user.password)
-            throw Error('OLD_PASSWORD_VALUE_IS_INVALID');
+            throw Error('PARAMETER_VALUE_IS_INVALID');
 
         //đã thoả mãn các điều kiện
 
@@ -158,16 +159,6 @@ const change_password = async (req, res) => {
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
             });
-        else if (error.message == 'OLD_PASSWORD_VALUE_IS_INVALID')
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: 'OLD_PASSWORD_VALUE_IS_INVALID',
-            });
-        else if (error.message == 'NEW_PASSWORD_VALUE_IS_INVALID')
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: 'NEW_PASSWORD_VALUE_IS_INVALID',
-            });
         else
             return res.status(200).json({
                 code: statusCode.UNKNOWN_ERROR,
@@ -176,7 +167,7 @@ const change_password = async (req, res) => {
     }
 };
 
-const getPushSettings = async (req, res) => {
+const get_push_settings = async (req, res) => {
     const { token } = req.query;
     const { _id } = req.userDataPass;
     try {
@@ -201,7 +192,7 @@ const getPushSettings = async (req, res) => {
     }
 };
 
-const setPushSettings = async (req, res) => {
+const set_push_settings = async (req, res) => {
     const {
         token,
         like_comment,
@@ -295,7 +286,7 @@ const setPushSettings = async (req, res) => {
     }
 };
 
-const setBlock = async (req, res) => {
+const set_block = async (req, res) => {
     let { token, user_id, type } = req.query;
     const { _id } = req.userDataPass;
 
@@ -395,7 +386,7 @@ const setBlock = async (req, res) => {
     }
 };
 
-const checkNewVersion = async (req, res) => {
+const check_new_version = async (req, res) => {
     const { token, last_update } = req.query;
     const { _id, active } = req.userDataPass;
     try {
@@ -403,19 +394,53 @@ const checkNewVersion = async (req, res) => {
             throw Error('params');
         }
         var versionData = await Version.find({}).sort({ created: 1 });
+        var userData = await User.findById(_id).populate({
+            path: 'notifications',
+            
+        }).populate({
+            path: 'conversations',
+            select: 'unread'
+        });
+
+        var unreadCount = 0;
+        userData.conversations.map((element) => {
+            if(element.unread === "1"){
+                unreadCount++;
+            }
+        })
+        
+        var resData = [];
+        userData.notifications.map((notification) => {
+            resData.push({
+                
+                notification_id: notification._id,
+                
+            })
+        })
+         console.log(userData);
+        var countNewNoti = 0;
+        resData.map((data) => {
+            if (data.read === "0") {
+                countNewNoti += 1;
+            }
+        })
 
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                version: versionData[0],
+                version: {
+                    version: versionData[0].version,
+                    require: versionData[0].require,
+                    url: versionData[0].url,
+                },
                 user: {
                     id: _id,
-                    active: active,
+                    active: active.toString(),
                 },
-                badge: 'thong bao chua doc',
-                unread_message: 'tin nhan chua doc',
-                now: 'chi so phien ban',
+                badge: (countNewNoti >= 100) ? countNewNoti = "99+" : countNewNoti.toString(),
+                unread_message: unreadCount.toString(),
+                now: versionData[0].version,
             },
         });
     } catch (error) {
@@ -437,8 +462,8 @@ module.exports = {
     logout,
     changeInfoAfterSignup,
     change_password,
-    getPushSettings,
-    setPushSettings,
-    setBlock,
-    checkNewVersion,
+    get_push_settings,
+    set_push_settings,
+    set_block,
+    check_new_version,
 };

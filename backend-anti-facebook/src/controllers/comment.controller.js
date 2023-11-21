@@ -1,8 +1,11 @@
+const mongoose = require('mongoose');
+
 const Post = require('../models/post.model.js');
 const User = require('../models/user.model.js');
 const Comment = require('../models/comment.model');
 const Mark = require('../models/mark.model.js');
 const Notification = require('../models/notification.model');
+const {addNotification} = require('./notification.controller.js');
 
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
@@ -103,9 +106,9 @@ const getMarkComment = async (req, res) => {
             code: statusCode.OK,
             message: statusMessage.OK,
             data: {
-                mappedMark,
+                mark: mappedMark,
                 comments: mappedComment,
-                is_blocked: postData.is_blocked || 'NO',
+                is_blocked: postData.is_blocked || '0',
             },
         });
     } catch (err) {
@@ -179,6 +182,14 @@ const setMarkComment = async (req, res) => {
         let resultData;
 
         if (mark_id && (type === '1' || type === '0')) {
+
+            if (userData.mark_list.includes(id)) {
+                return res.status(200).json({
+                    code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                    message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                });
+            }
+
             // Create and save a new mark
             const newMark = await Mark.create({
                 poster: _id,
@@ -191,6 +202,8 @@ const setMarkComment = async (req, res) => {
             // Add the new mark to the post's mark_list
             post.mark_list.push(newMark._id);
             await post.save();
+            userData.mark_list.push(id);
+            await userData.save();
 
             // Populate the post information with the new mark
             resultData = await populatePostInformation(id);
@@ -211,8 +224,31 @@ const setMarkComment = async (req, res) => {
             post.comment_list.push(newComment._id);
             await post.save();
 
+            console.log("userData.friends", userData.friends)
             // Populate the post information with the new comment
             resultData = await populatePostInformation(id);
+
+            const inputNotiData = {
+                notificationType: "comment",
+                postId: id,
+                username: userData.username,
+                lastUpdate: Date.now(),
+                avatar: userData.avatar,
+            }
+
+            const notiData = await addNotification(inputNotiData, _id);
+            const objectNotiId = mongoose.Types.ObjectId(notiData._id);
+            
+            console.log("notiData", notiData);
+            await User.findOneAndUpdate(
+                { _id: post.author },
+                {
+                    $push: {
+                        notifications: objectNotiId,
+                    },
+                },
+                { new: true }
+            );
         }
 
         const { mark_list, comment_list } = resultData;

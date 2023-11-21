@@ -15,9 +15,9 @@ router.post(
     afterLogin.changeInfoAfterSignup
 );
 router.post('/change_password', isAuth, afterLogin.change_password);
-router.post('/getPushSettings', isAuth, afterLogin.getPushSettings);
-router.post('/setPushSettings', isAuth, afterLogin.setPushSettings);
-router.post('/setBlock', isAuth, afterLogin.setBlock);
-router.post('/check_new_version', isAuth, afterLogin.checkNewVersion);
+router.post('/get_push_settings', isAuth, afterLogin.get_push_settings);
+router.post('/set_push_settings', isAuth, afterLogin.set_push_settings);
+router.post('/set_block', isAuth, afterLogin.set_block);
+router.post('/check_new_version', isAuth, afterLogin.check_new_version);
 
 module.exports = router;

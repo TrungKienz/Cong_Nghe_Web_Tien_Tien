@@ -24,6 +24,8 @@ const userSchema = new mongoose.Schema({
     coins: Number,
     devtype: String,
     devtoken: String,
+    address: String,
+    created: Date,
     requestedFriends: [
         {
             author: {
@@ -33,6 +35,7 @@ const userSchema = new mongoose.Schema({
             created: Date,
         },
     ],
+    
     sendRequestedFriends: [
         {
             receiver: {
@@ -52,6 +55,12 @@ const userSchema = new mongoose.Schema({
         {
             type: Schema.Types.ObjectId,
             ref: 'user',
+        },
+    ],
+    mark_list: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'mark',
         },
     ],
     savedSearch: [
@@ -91,11 +100,8 @@ const userSchema = new mongoose.Schema({
     ],
     notifications: [
         {
-            id: {
-                type: Schema.Types.ObjectId,
-                ref: 'notification',
-            },
-            read: String,
+            type: Schema.Types.ObjectId,
+            ref: 'notification',
         },
     ],
     not_suggest: [

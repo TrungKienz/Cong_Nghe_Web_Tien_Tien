@@ -1,31 +1,42 @@
-/* Trong trường data cần phải có các trường như sau: 
-- type: Kiểu notification
-- object_id: Phục vụ cho việc chuyển màn hình (id của bài viết)
-- title: Nội dung của notification
-- notification_id: Id của tin thông báo
-- avatar: avatar của người tạo thông báo
-- read: trạng thái đã đọc hay chưa*/
+const Notification = require('../models/notification.model');
 
-import Notification from '../models/notification.model';
+const addNotification = async (data, _id) => {
+    try {
+        const { notificationType, postId, username, lastUpdate, avatar } = data;
 
-const addNotification = async (data) => {
-    var typeNoti = data.type;
-    if (typeNoti === 'post') {
+        if (!notificationType || !postId || !username || !lastUpdate) {
+            throw new Error('Missing required fields in data');
+        }
+
+        let title;
+        if (notificationType === 'post') {
+            title = `${username} đã thêm một bài viết mới`;
+        } else if (notificationType === 'comment') {
+            title = `${username} đã thêm một bình luận mới`;
+        } else {
+            throw new Error('Invalid notification type');
+        }
+
+        const newNotification = new Notification({
+            type: notificationType,
+            object_id: postId,
+            title,
+            created: Date.now(),
+            avatar: avatar || null, // Use data.avatar instead of type.avatar
+            group: '0',
+            read: '0',
+            last_update: lastUpdate,
+            userId: _id,
+        });
+
+        await newNotification.save();
+
+        return newNotification;
+    } catch (error) {
+        console.error(error);
+        throw error; // Rethrow the error for handling at a higher level
     }
-    var newNotification = await new Notification({
-        type: data.type || null,
-        object_id: data.notificationId || null,
-        title: data.username + ' đã thêm một bài viết mới' || null,
-        notification_id: data.notificationId || null,
-        created: Date.now(),
-        avatar: type.avatar || null,
-        group: '1',
-        read: '0',
-        lastUpdate: data.lastUpdate,
-        userId: _id,
-    }).save();
-
-    return newNotification;
 };
 
-module.export = addNotification;
+
+module.exports = { addNotification };

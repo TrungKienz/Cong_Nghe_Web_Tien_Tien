@@ -225,6 +225,10 @@ const getPost = async (req, res) => {
                     path: 'poster',
                     select: 'username avatar',
                 },
+            })
+            .populate({
+                path: 'mark_list',
+                select: 'type'
             });
 
         console.log("POST: ", post)
@@ -234,6 +238,22 @@ const getPost = async (req, res) => {
         }
 
         const author = await User.findOne({ _id: post.author?._id });
+        const userData = await User.findById(_id);
+
+        var canMark;
+        if (userData.mark_list.includes(id)){
+            canMark = "0";
+        }
+
+        var isMarked;
+        if (userData.mark_list.includes(id)) {
+            isMarked = "0";
+        }
+
+        var canRate;
+        if (userData.mark_list.includes(id)) {
+            canRate = "-5";
+        }
 
         // Response Handling
         var responseData = {
@@ -244,13 +264,15 @@ const getPost = async (req, res) => {
             modified: post.modified,
             fake: "0",
             trust: "0",
+            kudos: post.kudos_list.length.toString(),
+            disappointed: post.disappointed_list.length.toString(),
             is_rated: "0",
-            is_marked: "0",
+            is_marked: isMarked || "1",
             image: [],
             video: {},
             author: {
                 id: author._id,
-                username: author.username,
+                name: author.username,
                 avatar: author.avatar,
                 coins: (author.coins).toString(),
                 listing: author.postIds.map((postId) => ({ postId })),
@@ -260,10 +282,15 @@ const getPost = async (req, res) => {
                 name: post.described,
                 has_name: "0",
             },
-            state: post.state,
+            state: post.state || "public",
             is_blocked: "0",
             can_edit: "0",
-            banned: "0",
+            banned: post.banned || "0",
+            can_mark: canMark || "1",
+            can_rate: canRate || "1",
+            url: "",
+            messages: canMark == -5 ? "Khong duoc mark":
+                    canRate == -5 ? "Khong duoc rate" : "",
         };
 
         console.log(post.image)
@@ -334,6 +361,7 @@ const getPost = async (req, res) => {
 const editPost = async (req, res) => {
     const { id, described, status, state, image_del, image_sort, auto_accept } =
         req.query;
+    const { _id } = req.userDataPass;
 
     try {
         console.log(image_del, image_del.length, typeof image_del);
@@ -372,6 +400,13 @@ const editPost = async (req, res) => {
                     code: statusCode.OK,
                     message: 'Not enough coin',
                 });
+            }
+            
+            if (postData.author.toString() !== _id.toString()) {
+                return res.status(200).json({
+                    code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                    message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+                })
             }
 
             if (described) {
@@ -422,22 +457,29 @@ const editPost = async (req, res) => {
                 await postData.save();
             }
             if (isPostOverOneDay == true) {
+                // authorData.coins = currentCoin - 4;
+                // authorData.save();
+                // return res.status(200).json({
+                //     code: statusCode.OK,
+                //     message: statusMessage.OK,
+                //     coins: currentCoin - 4,
+                // });
+                return res.status(200).json({
+                    code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                    message: "Can not edit this post",
+                });
+            } else {
+                // return res.status(200).json({
+                //     code: statusCode.OK,
+                //     message: statusMessage.OK,
+                //     coins: currentCoin,
+                // });
                 authorData.coins = currentCoin - 4;
                 authorData.save();
                 return res.status(200).json({
                     code: statusCode.OK,
-                    message: {
-                        coins: currentCoin - 4,
-                    },
-                });
-            } else {
-                return res.status(200).json({
-                    code: statusCode.OK,
-                    // message: {
-                    //     coins: currentCoin,
-                    // },
                     message: statusMessage.OK,
-                    coins: currentCoin,
+                    coins: currentCoin - 4,
                 });
             }
         } catch (e) {
@@ -570,20 +612,20 @@ const feel = async (req, res) => {
             postDataPre.disappointed_list?.includes(_id) ||
             postDataPre.kudos_list?.includes(_id)
         ) {
-            // return res.status(200).json({
-            //   code: statusCode.OK,
-            //   message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-            // });
             return res.status(200).json({
-                code: statusCode.OK,
-                message: statusMessage.OK,
-                data: {
-                    disappointed: postDataPre.disappointed
-                        ? postDataPre.disappointed
-                        : 0,
-                    kudos: postDataPre.kudos ? postDataPre.kudos : 0,
-                },
+              code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+              message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
             });
+            // return res.status(200).json({
+            //     code: statusCode.OK,
+            //     message: statusMessage.OK,
+            //     data: {
+            //         disappointed: postDataPre.disappointed
+            //             ? postDataPre.disappointed
+            //             : 0,
+            //         kudos: postDataPre.kudos ? postDataPre.kudos : 0,
+            //     },
+            // });
         }
 
         let updateFields = {};
@@ -607,10 +649,8 @@ const feel = async (req, res) => {
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    disappointed: postData.disappointed
-                        ? postData.disappointed
-                        : 0,
-                    kudos: postData.kudos ? postData.kudos : 0,
+                    disappointed: type == 0 ? "1" : "0",
+                    kudos: type == 1 ? "1" : "0",
                 },
             });
         } else {
@@ -793,15 +833,31 @@ const search = async (req, res) => {
                 sortedResults.push(result);
             }
         });
+        const mapResult = (element) => {
+            return {
+              id: element._id,
+              name: element.described,
+              image: element.image.map((elementImage) => ({
+                url: elementImage.url,
+              })),
+              video: element.video,
+              feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
+              mark_comment: (element.comment_list.length + element.mark_list.length).toString(),
+              is_felt: "0",
+              author: {
+                id: element.author.id.toString(),
+                username: element.author.username,
+                avatar: element.author.avatar,
+              },
+              described: element.described,
+            };
+          };
 
         // Trả về kết quả đã được sắp xếp
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: {
-                id: _id,
-                results: sortedResults,
-            },
+            data: sortedResults.map(mapResult),
         });
 
         // Cập nhật danh sách tìm kiếm đã lưu của người dùng
@@ -849,7 +905,7 @@ const search = async (req, res) => {
     }
 };
 
-const getSavedSearch = async (req, res) => {
+const get_saved_search = async (req, res) => {
     var { token, index, count } = req.query;
     const { _id } = req.userDataPass;
     // check params
@@ -915,7 +971,7 @@ const getSavedSearch = async (req, res) => {
     }
 };
 
-const delSavedSearch = async (req, res) => {
+const del_saved_search = async (req, res) => {
     var { token, search_id, all } = req.query;
     const { _id } = req.userDataPass;
     // check params
@@ -983,6 +1039,7 @@ const getListPosts = async (req, res) => {
             user_id,
             index,
             count,
+            last_id,
         } = req.query;
 
         // Parameter validation
@@ -1055,6 +1112,13 @@ const getListPosts = async (req, res) => {
 
         console.log("resultData.postIds.author", resultData)
         
+        var newItems = 0;
+
+        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
+
+        if (lastIdIndex !== -1) {
+            newItems = lastIdIndex;
+        }
 
         // Manipulate post data
         const resultArray = resultData.postIds
@@ -1088,6 +1152,8 @@ const getListPosts = async (req, res) => {
                 can_edit = "0";
             }
 
+
+
             // Construct the post object
             return {
                 id: element._id,
@@ -1119,7 +1185,189 @@ const getListPosts = async (req, res) => {
             message: statusMessage.OK,
             data: {
                 post: resultArray,
-                new_items: "2",
+                new_items: newItems,
+                last_id: resultData.postIds[0]._id,
+            },
+        });
+
+    } catch (error) {
+        if (error.message === 'params') {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        } else if (error.message === 'nodata') {
+            return res.status(404).json({
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+            });
+        } else {
+            console.error(error);
+            return res.status(500).json({
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
+            });
+        }
+    }
+};
+
+const getListVideo = async (req, res) => {
+    try {
+        let {
+            last_id,
+            user_id,
+            index,
+            count,
+        } = req.query;
+
+        // Parameter validation
+        if (!index || !count) {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGH,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGH,
+            });
+        }
+
+        // Parse index and count to ensure they are integers
+        index = parseInt(index);
+        count = parseInt(count);
+
+        if (isNaN(index) || isNaN(count) || index < 0 || count < 0) {
+            return res.status(400).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        }
+
+        // Default values for index and count
+        index = index || 0;
+        count = count || 20;
+
+        // Fetch posts based on user_id or user's friends
+        let resultData;
+
+        if (user_id) {
+            resultData = await User.findById(user_id).populate({
+                path: 'postIds',
+                populate: {
+                    path: 'author',
+                    select: 'username avatar',
+                    populate: {
+                        path: 'comment_list',
+                        populate: {
+                            path: 'poster',
+                            select: 'username avatar',
+                        },
+                    },
+                },
+                options: {
+                    sort: {
+                        created: -1,
+                    },
+                },
+            });
+
+        } else {
+            const result = await User.findById(req.userDataPass._id).populate({
+                path: 'friends',
+                select: 'postIds',
+                populate: {
+                    path: 'postIds',
+                    populate: {
+                        path: 'author',
+                        select: 'avatar username coins',
+                    },
+                    options: {
+                        sort: {
+                            created: -1,
+                        },
+                    },
+                },
+            });
+
+            resultData = [].concat(...result.friends.map(e => e.postIds));
+        }
+        
+        var newItems = 0;
+
+        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
+
+        if (lastIdIndex !== -1) {
+            newItems = lastIdIndex;
+        }
+
+
+        // Manipulate post data
+        const resultArray = resultData.postIds
+        .slice(index, index + count)
+        .filter(element => {
+            return element.video != "{}"
+        })
+        .map(element => {
+            // Check if the author is blocked
+            var is_blocked;
+            if (resultData.blockedIds?.includes(element._id)) {
+                is_blocked = "1";
+            } else {
+                is_blocked = "0";
+            }
+
+            // Check can edit
+            const postDate = new Date(resultData.created);
+            const currentDate = Date.now();
+            const oneDayInMillis = 24 * 60 * 60 * 1000;
+
+            var isPostOverOneDay = false;
+
+            if (currentDate - postDate > oneDayInMillis) {
+                isPostOverOneDay = true;
+            }
+
+            var can_edit;
+            if (isPostOverOneDay === true && resultData.coins >= 4){
+                can_edit = "1";
+            } else if (isPostOverOneDay === false) {
+                can_edit = "1";
+            } else {
+                can_edit = "0";
+            }
+            //if (element.video == "{}") {return;}
+            
+
+
+            // Construct the post object
+            return {
+                id: element._id,
+                name: element.described,
+                image: element.image.map((elementImage) => ({
+                    url: elementImage.url, 
+                })),
+                video: element.video,  
+                described: element.described,
+                created: element.created,
+                feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
+                comment_mark: (element.comment_list.length + element.mark_list.length).toString(),
+                is_felt: "0",
+                is_blocked: is_blocked,
+                can_edit: can_edit,
+                banned: "0",
+                status: element.status,
+                author: {
+                    id: element.author.id,
+                    username: element.author.username,
+                    avatar: element.author.avatar,
+                },
+            };
+        })
+        ;
+
+
+        return res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: {
+                post: resultArray,
+                new_items: newItems.toString(),
                 last_id: resultData.postIds[0]._id,
             },
         });
@@ -1157,6 +1405,7 @@ module.exports = {
     like,
     deletePostAll,
     search,
-    getSavedSearch,
-    delSavedSearch,
+    get_saved_search,
+    del_saved_search,
+    getListVideo,
 };
