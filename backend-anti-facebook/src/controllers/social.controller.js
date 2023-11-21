@@ -152,6 +152,8 @@ const getListOfFriendSuggestions = async (req, res) => {
         _.forEach(e => {
           ownerFriendsList.push(e._id.toString())
         });
+
+        const blockedList = ownerData.blockedIds.toObject()
         //console.log(ownerFriendsList)
         //#endregion
 
@@ -183,7 +185,13 @@ const getListOfFriendSuggestions = async (req, res) => {
                     avatar: user.avatar,
                     same_friends: user.same_friends.toString()
                 }
-                newList.push(_formatted);
+                blockedList.forEach(element => {
+                    console.log()
+                    if (element != user.id)
+                    {
+                        newList.push(_formatted);
+                    }
+                });
             }
         });
         //#endregion
