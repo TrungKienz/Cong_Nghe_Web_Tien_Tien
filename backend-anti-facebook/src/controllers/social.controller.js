@@ -275,7 +275,14 @@ const getListOfFriendRequests = async (req, res) => {
             _userInfo.same_friends = same_friends_count;
             delete _userInfo._id
             delete _userInfo.friends;
-            newList.push(_userInfo);
+            const _formatted = {
+                id: _userInfo.id,
+                username: _userInfo.username,
+                avatar: _userInfo.avatar,
+                same_friends: _userInfo.same_friends,
+                created: _userInfo.created
+            }
+            newList.push(_formatted);
         }
         //#endregion
 
