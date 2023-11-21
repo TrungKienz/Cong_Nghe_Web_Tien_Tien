@@ -399,11 +399,12 @@ const getListOfUserFriends = async (req, res) => {
             }
             blockedList.forEach(element => {
                 console.log()
-                if (element != _userInfo.id)
+                if (element == _userInfo.id)
                 {
-                    newList.push(_formatted);
+                    return
                 }
             });
+            newList.push(_formatted);
             
         }
         //#endregion
