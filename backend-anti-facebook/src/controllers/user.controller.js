@@ -396,7 +396,19 @@ const check_new_version = async (req, res) => {
         var versionData = await Version.find({}).sort({ created: 1 });
         var userData = await User.findById(_id).populate({
             path: 'notifications',
+            
+        }).populate({
+            path: 'conversations',
+            select: 'unread'
         });
+
+        var unreadCount = 0;
+        userData.conversations.map((element) => {
+            if(element.unread === "1"){
+                unreadCount++;
+            }
+        })
+        
         var resData = [];
         userData.notifications.map((notification) => {
             resData.push({
@@ -405,6 +417,7 @@ const check_new_version = async (req, res) => {
                 
             })
         })
+         console.log(userData);
         var countNewNoti = 0;
         resData.map((data) => {
             if (data.read === "0") {
@@ -426,7 +439,7 @@ const check_new_version = async (req, res) => {
                     active: active.toString(),
                 },
                 badge: (countNewNoti >= 100) ? countNewNoti = "99+" : countNewNoti.toString(),
-                unread_message: 'tin nhan chua doc',
+                unread_message: unreadCount.toString(),
                 now: versionData[0].version,
             },
         });
