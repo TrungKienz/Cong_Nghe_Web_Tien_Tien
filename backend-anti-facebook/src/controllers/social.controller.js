@@ -102,7 +102,7 @@ const addFriend = async (req, res) => {
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: { requested_friends: totalRequestsSent },
+            data: { requested_friends: totalRequestsSent.toString() },
         });
     } catch (error) {
         return res.status(200).json({
@@ -181,7 +181,7 @@ const getListOfFriendSuggestions = async (req, res) => {
                     user_id : user.user_id,
                     username: user.username,
                     avatar: user.avatar,
-                    same_friends: user.same_friends
+                    same_friends: user.same_friends.toString()
                 }
                 newList.push(_formatted);
             }
@@ -279,7 +279,7 @@ const getListOfFriendRequests = async (req, res) => {
                 id: _userInfo.id,
                 username: _userInfo.username,
                 avatar: _userInfo.avatar,
-                same_friends: _userInfo.same_friends,
+                same_friends: _userInfo.same_friends.toString(),
                 created: _userInfo.created
             }
             newList.push(_formatted);
@@ -374,7 +374,7 @@ const getListOfUserFriends = async (req, res) => {
                 id: _userInfo.id,
                 username: _userInfo.username,
                 avatar: _userInfo.avatar,
-                same_friends: _userInfo.same_friends,
+                same_friends: _userInfo.same_friends.toString(),
                 created: _userInfo.created
             }
             newList.push(_formatted);
