@@ -4,7 +4,7 @@ dotenv.config();
 // const formidable = require("formidable");
 // const { getVideoDurationInSeconds } = require("get-video-duration");
 // const mongoose = require("mongoose");
-
+const Fuse = require('fuse.js');
 const Post = require('../models/post.model.js');
 const User = require('../models/user.model.js');
 const ReportPost = require('../models/report.post.model.js');
@@ -123,7 +123,7 @@ const addPost = async (req, res) => {
             data: {
                 id: newPost._id,
                 url: null,
-                coins: updatedCoin,
+                coins: updatedCoin.toString(),
             },
             // user: userData
         });
@@ -479,7 +479,7 @@ const editPost = async (req, res) => {
                 return res.status(200).json({
                     code: statusCode.OK,
                     message: statusMessage.OK,
-                    coins: currentCoin - 4,
+                    coins: (currentCoin - 4).toString(),
                 });
             }
         } catch (e) {
@@ -514,7 +514,7 @@ const deletePost = async (req, res) => {
     const { _id } = req.userDataPass;
     try {
         const authorData = await User.findOne({ _id: _id });
-        const currentCoin = authorData.coins;
+        var currentCoin = authorData.coins;
         if (currentCoin < 4) {
             return res.status(200).json({
                 code: statusCode.OK,
@@ -534,7 +534,8 @@ const deletePost = async (req, res) => {
                 },
             }
         );
-
+        
+        
         if (!result) {
             console.log('Khong tim thay bai viet');
             throw Error('Post is not existed');
@@ -545,7 +546,7 @@ const deletePost = async (req, res) => {
             //     coins: currentCoin,
             // },
             message: statusMessage.OK,
-            coins: currentCoin,
+            coins: (currentCoin - 4).toString(),
         });
     } catch (error) {
         if (error.message == 'Post is not existed') {
@@ -565,6 +566,12 @@ const deletePost = async (req, res) => {
 const reportPost = async (req, res) => {
     const { id, subject, details } = req.query;
     try {
+        if (!id || !subject || !details) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+            });
+        }
         var result = await Post.findOne({ _id: id });
         if (!result) {
             throw Error('notfound');
@@ -779,7 +786,134 @@ const like = async (req, res) => {
     }
 };
 
+
 const search = async (req, res) => {
+  var { keyword, index, count, user_id } = req.query;
+  const { _id } = req.userDataPass;
+
+  if (!user_id) {
+    return res.status(200).json({
+      code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+      message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+    });
+  }
+
+  try {
+    index = index ? index : 0;
+    count = count ? count : 20;
+
+    if (
+      !keyword ||
+      _id.toString() !== user_id ||
+      isNaN(index) ||
+      isNaN(count) ||
+      !index ||
+      !count
+    ) {
+      throw Error('params');
+    }
+
+    // Tìm kiếm các kết quả đủ từ và đúng thứ tự
+    var postData1 = await Post.find({
+      described: new RegExp(keyword, 'i'),
+    });
+
+    // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự
+    var postData2 = await Post.find({
+      $or: [
+        { keyword: new RegExp(keyword, 'i') },
+        { keyword: new RegExp(keyword.replace(' ', '|'), 'i') },
+      ],
+    }).populate({
+      path: 'author',
+      select: 'username avatar',
+    });
+
+    // Combine the search results into a single array
+    const postData = postData1.concat(postData2);
+
+    // Create a Fuse instance
+    const fuse = new Fuse(postData, {
+      keys: ['described'],
+    });
+
+    // Perform the search
+    const sortedResults = fuse.search(keyword);
+
+    const mapResult = (element) => {
+      return {
+        id: element.item._id,
+        name: element.item.described,
+        image: element.item.image.map((elementImage) => ({
+          url: elementImage.url,
+        })),
+        video: element.item.video,
+        feel: (element.item.kudos_list.length + element.item.disappointed_list.length).toString(),
+        mark_comment: (element.item.comment_list.length + element.item.mark_list.length).toString(),
+        is_felt: "0",
+        author: {
+          //id: typeof element.item.author.id === 'string' ? element.item.author.id : element.item.author.id.toString(),
+          id: element.item.author.id.toString('hex'),
+          username: element.item.author.username,
+          avatar: element.item.author.avatar,
+        },
+        described: element.item.described,
+      };
+    };
+
+    // Return the sorted results
+    res.status(200).json({
+      code: statusCode.OK,
+      message: statusMessage.OK,
+      data: sortedResults.map(mapResult),
+    });
+
+    // Cập nhật danh sách tìm kiếm đã lưu của người dùng
+    await User.findByIdAndUpdate(
+      _id,
+      {
+        $pull: {
+          savedSearch: {
+            keyword: keyword,
+          },
+        },
+      },
+      { new: true }
+    );
+
+    await User.findByIdAndUpdate(
+      _id,
+      {
+        $push: {
+          savedSearch: {
+            keyword: keyword,
+            created: Date.now(),
+          },
+        },
+      },
+      { new: true }
+    );
+  } catch (error) {
+    if (error.message == 'params') {
+      return res.status(500).json({
+        code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+      });
+    } else if (error.message == 'nodata') {
+      return res.status(500).json({
+        code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+        message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+      });
+    } else {
+      return res.status(500).json({
+        code: statusCode.UNKNOWN_ERROR,
+        message: statusMessage.UNKNOWN_ERROR,
+      });
+    }
+  }
+};
+
+/* const search = async (req, res) => {
     var { keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
 
@@ -903,7 +1037,7 @@ const search = async (req, res) => {
             });
         }
     }
-};
+}; */
 
 const get_saved_search = async (req, res) => {
     var { token, index, count } = req.query;

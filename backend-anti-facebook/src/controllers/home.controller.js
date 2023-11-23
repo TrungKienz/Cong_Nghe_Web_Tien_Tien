@@ -269,7 +269,7 @@ const getUserInfo = async (req, res) => {
                 address: userData.address || null,
                 city: userData.city || null,
                 country: userData.country || null,
-                listing: listing,
+                listing: listing.toString(),
                 is_friend: "0",
                 online: "0",
                 coins: userData.coins || "0",
