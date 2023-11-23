@@ -75,7 +75,14 @@ const getConversation = async (req, res) => {
     try {
         const { partner_id, conversation_id, index, count } = req.query;
         const { _id } = req.jwtDecoded.data;
-
+        index = index ? index : 0;
+        count = count ? count : 20;
+        if (!partner_id || !conversation_id) {
+            return res.status(500).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+            });
+        }
         if (conversation_id && conversation_id.length > 1) {
             const chatData = await Conversation.findById(conversation_id)
                 .populate({

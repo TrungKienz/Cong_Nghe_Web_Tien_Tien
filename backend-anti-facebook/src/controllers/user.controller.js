@@ -8,10 +8,9 @@ const statusMessage = require('./../constants/statusMessage.constant.js');
 const md5 = require('md5');
 
 const logout = async (req, res) => {
-    const { token } = req.query;
     const { _id } = req.userDataPass;
     try {
-        var userData = await User.findByIdAndUpdate(_id, {
+        await User.findByIdAndUpdate(_id, {
             $set: {
                 token: null,
             },
@@ -19,7 +18,6 @@ const logout = async (req, res) => {
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            // data: userData,
         });
     } catch (error) {
         return res.status(200).json({

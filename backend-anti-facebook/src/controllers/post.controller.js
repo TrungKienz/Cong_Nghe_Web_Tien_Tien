@@ -123,7 +123,7 @@ const addPost = async (req, res) => {
             data: {
                 id: newPost._id,
                 url: null,
-                coins: updatedCoin,
+                coins: updatedCoin.toString(),
             },
             // user: userData
         });
@@ -479,7 +479,7 @@ const editPost = async (req, res) => {
                 return res.status(200).json({
                     code: statusCode.OK,
                     message: statusMessage.OK,
-                    coins: currentCoin - 4,
+                    coins: (currentCoin - 4).toString(),
                 });
             }
         } catch (e) {
@@ -514,7 +514,7 @@ const deletePost = async (req, res) => {
     const { _id } = req.userDataPass;
     try {
         const authorData = await User.findOne({ _id: _id });
-        const currentCoin = authorData.coins;
+        var currentCoin = authorData.coins;
         if (currentCoin < 4) {
             return res.status(200).json({
                 code: statusCode.OK,
@@ -534,7 +534,8 @@ const deletePost = async (req, res) => {
                 },
             }
         );
-
+        
+        
         if (!result) {
             console.log('Khong tim thay bai viet');
             throw Error('Post is not existed');
@@ -545,7 +546,7 @@ const deletePost = async (req, res) => {
             //     coins: currentCoin,
             // },
             message: statusMessage.OK,
-            coins: currentCoin,
+            coins: (currentCoin - 4).toString(),
         });
     } catch (error) {
         if (error.message == 'Post is not existed') {
@@ -565,6 +566,12 @@ const deletePost = async (req, res) => {
 const reportPost = async (req, res) => {
     const { id, subject, details } = req.query;
     try {
+        if (!id || !subject || !details) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+            });
+        }
         var result = await Post.findOne({ _id: id });
         if (!result) {
             throw Error('notfound');
