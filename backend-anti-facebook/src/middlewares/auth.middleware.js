@@ -14,7 +14,7 @@ const isAuth = async (req, res, next) => {
         req.headers['authorization'];
     console.log('Token: ', tokenFromClient);
 
-    if (tokenFromClient.includes('Bearer')) {
+    if (tokenFromClient?.includes('Bearer')) {
         const arrayToken = tokenFromClient.split(' ');
         tokenFromClient = arrayToken[1];
     }
@@ -46,8 +46,8 @@ const isAuth = async (req, res, next) => {
         } catch (error) {
             console.log('error', error.message);
             return res.status(401).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+                code: statusCode.TOKEN_IS_INVALID,
+                message: statusMessage.TOKEN_IS_INVALID,
                 //server: "Lỗi token không hợp lệ"
             });
         }
