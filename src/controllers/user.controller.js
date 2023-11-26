@@ -133,7 +133,13 @@ const change_password = async (req, res) => {
         if (password == new_password) throw Error('PARAMETER_VALUE_IS_INVALID');
 
         let count = 0;
-        // chưa check xâu con chung dài nhất 80%
+        //check xâu con chung dài nhất 80%
+
+        if (
+            password.includes(new_password) &&
+            new_password.length >= 0.8 * password.length
+        )
+            throw Error('PARAMETER_VALUE_IS_INVALID');
 
         password = md5(password);
         if (password != user.password)
