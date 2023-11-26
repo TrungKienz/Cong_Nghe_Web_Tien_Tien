@@ -296,23 +296,23 @@ const set_block = async (req, res) => {
 
     try {
         type = Number(type);
-        //kiểm tra tham số đầu vào
+        // Kiểm tra tham số đầu vào
         if (user_id == _id || (type != 0 && type != 1)) {
             console.log('trùng user_id hoặc type không đúng');
-            throw Error('params');
+            throw new Error('params');
         }
-        // tìm user bị block
+        // Tìm user bị block
         var friendData = await User.findById(user_id);
         if (!friendData || friendData.is_blocked) {
             console.log('friend không tìm thấy hoặc đã bị server block');
-            throw Error('action');
+            throw new Error('action');
         }
         // OK
         var userData = req.userDataPass;
         var isBlocked = userData.blockedIds.includes(user_id);
         if (type == 0 && isBlocked) {
-            //block và đã block r
-            throw Error('blockedbefore');
+            // Block và đã block rồi
+            throw new Error('blockedbefore');
         }
         if (type == 0 && !isBlocked) {
             await User.findByIdAndUpdate(_id, {
@@ -346,8 +346,8 @@ const set_block = async (req, res) => {
             });
         }
         if (type == 1 && !isBlocked) {
-            // unblock và chưa block
-            throw Error('unblockedbefore');
+            // Unblock và chưa block trước đó
+            throw new Error('unblockedbefore');
         }
         if (type == 1 && isBlocked) {
             await User.findByIdAndUpdate(_id, {
@@ -361,25 +361,23 @@ const set_block = async (req, res) => {
             });
         }
     } catch (error) {
-        if (error.massage == 'params') {
+        if (error.message == 'params') {
             return res.status(500).json({
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
             });
         } else if (
-            error.massage == 'blockedbefore' ||
+            error.message == 'blockedbefore' ||
             error.message == 'unblockedbefore'
         ) {
             return res.status(500).json({
                 code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-                message:
-                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
             });
-        } else if (error.massage == 'action') {
+        } else if (error.message == 'action') {
             return res.status(500).json({
                 code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-                message:
-                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
             });
         } else {
             return res.status(500).json({
