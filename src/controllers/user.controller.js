@@ -30,90 +30,77 @@ const logout = async (req, res) => {
 const changeInfoAfterSignup = async (req, res) => {
     const { _id, email } = req.userDataPass;
     const { username } = req.query;
-    // username
-    const avatar = req.files['avatar'];
+    const avatar = req.files && req.files['avatar'];
     const timeCurrent = Date.now();
     try {
         if (!username) {
-            throw Error('PARAMETER_VALUE_IS_INVALID');
-        } else {
-            if (avatar) {
-                if (avatar[0].size > 1024 * 1024 * 4) {
-                    console.log('quá 4mb dung lượng tối đa cho phép');
-                    return res.status(200).json({
-                        code: statusCode.FILE_SIZE_IS_TOO_BIG,
-                        message: statusMessage.FILE_SIZE_IS_TOO_BIG,
-                    });
-                }
-                const typeFile = avatar[0].originalname.split('.')[1]; //tách lấy kiểu của file mà người dùng gửi lên
-                if (
-                    !(
-                        typeFile == 'jpg' ||
-                        typeFile == 'jpeg' ||
-                        typeFile == 'png'
-                    )
-                ) {
-                    //không đúng định dạng
-                    console.log('File không đúng định dạng');
-                    return res.status(200).json({
-                        code: statusCode.FILE_SIZE_IS_TOO_BIG,
-                        message: statusMessage.FILE_SIZE_IS_TOO_BIG,
-                    });
-                }
-                const result = await cloudHelper.upload(avatar[0], 'avatar'); //lưu và đổi tên file
-                // update tên user và đường dẫn avatar, thời gian sửa đổi
-                await User.findOneAndUpdate(
-                    { _id: _id },
-                    {
-                        $set: {
-                            avatar: result.url,
-                            username: username,
-                        },
-                    }
-                );
+            return res.status(200).json({
+                code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+                message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+            });
+        } 
+        if (avatar) {
+            if (avatar[0].size > 1024 * 1024 * 4) {
+                console.log('quá 4mb dung lượng tối đa cho phép');
                 return res.status(200).json({
-                    code: statusCode.OK,
-                    message: statusMessage.OK,
-                    data: {
-                        id: _id,
-                        username: username,
-                        email: email,
-                        created: Date(timeCurrent),
-                        avatar: result.url,
-                    },
-                });
-            } else {
-                return res.status(200).json({
-                    code: statusCode.OK,
-                    message: statusMessage.OK,
-                    data: {
-                        id: _id,
-                        username: username,
-                        email: email,
-                        created: Date(timeCurrent),
-                        avatar: req.userDataPass.avatar,
-                    },
+                    code: statusCode.FILE_SIZE_IS_TOO_BIG,
+                    message: statusMessage.FILE_SIZE_IS_TOO_BIG,
                 });
             }
-        }
-    } catch (error) {
-        console.error(error.message);
-        if (error.message == 'PARAMETER_VALUE_IS_INVALID') {
+            const typeFile = avatar[0].originalname.split('.')[1]; 
+            if (
+                !(
+                    typeFile == 'jpg' ||
+                    typeFile == 'jpeg' ||
+                    typeFile == 'png'
+                )
+            ) {
+                return res.status(200).json({
+                    code: statusCode.PARAMETER_TYPE_IS_INVALID,
+                    message: statusMessage.PARAMETER_TYPE_IS_INVALID,
+                });
+            }
+            const result = await cloudHelper.upload(avatar[0], 'avatar'); 
+            await User.findOneAndUpdate(
+                { _id: _id },
+                {
+                    $set: {
+                        avatar: result.url,
+                        username: username,
+                    },
+                }
+            );
             return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-            });
-        } else if (error.message == 'FILE_SIZE_IS_TOO_BIG') {
-            return res.status(200).json({
-                code: statusCode.FILE_SIZE_IS_TOO_BIG,
-                message: statusMessage.FILE_SIZE_IS_TOO_BIG,
+                code: statusCode.OK,
+                message: statusMessage.OK,
+                data: {
+                    id: _id,
+                    username: username,
+                    email: email,
+                    created: Date(timeCurrent),
+                    avatar: result.url,
+                },
             });
         } else {
             return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR,
+                code: statusCode.OK,
+                message: statusMessage.OK,
+                data: {
+                    id: _id,
+                    username: username,
+                    email: email,
+                    created: Date(timeCurrent),
+                    avatar: req.userDataPass.avatar,
+                },
             });
         }
+
+
+    } catch (error) {
+        return res.status(200).json({
+            code: statusCode.UNKNOWN_ERROR,
+            message: statusMessage.UNKNOWN_ERROR,
+        });
     }
 };
 
