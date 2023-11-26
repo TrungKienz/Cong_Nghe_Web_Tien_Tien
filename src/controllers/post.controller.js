@@ -919,6 +919,7 @@ const search = async (req, res) => {
         }
     }
 };
+ 
 
 /* const search = async (req, res) => {
     var { keyword, index, count, user_id } = req.query;
@@ -946,12 +947,12 @@ const search = async (req, res) => {
             throw Error('params');
         }
 
-        // Tìm kiếm các kết quả đủ từ và đúng thứ tự
+        // Tìm kiếm các kết quả đủ từ và đúng thứ tự bằng Fuse
         var postData1 = await Post.find({
             described: new RegExp(keyword, 'i'),
         });
 
-        // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự
+        // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự bằng Fuse
         var postData2 = await Post.find({
             $or: [
                 { keyword: new RegExp(keyword, 'i') },
@@ -962,43 +963,54 @@ const search = async (req, res) => {
             select: 'username avatar',
         });
 
-        // Sắp xếp kết quả theo ưu tiên
-        var sortedResults = [];
+        // Combine the search results into a single array
+        const postData = postData1.concat(postData2);
 
-        // Đưa các kết quả đủ từ và đúng thứ tự lên đầu danh sách
-        sortedResults = sortedResults.concat(postData1);
-
-        // Lọc và thêm các kết quả đủ từ nhưng không đúng thứ tự vào danh sách
-        postData2.forEach((result) => {
-            if (!sortedResults.includes(result)) {
-                sortedResults.push(result);
-            }
+        // Create a Fuse instance
+        const fuse = new Fuse(postData, {
+            keys: ['described'],
         });
+
+        // Perform the search using Fuse
+        const fuseResults = fuse.search(keyword);
+
+        // Filter the results further using Regex
+        const regexResults = fuseResults.filter(result => {
+            const regex = new RegExp(`(?=\\b${keyword.split(' ').join('\\b)(?=.*\\b')}\\b)`, 'i');
+            return regex.test(result.item.described);
+        });
+
         const mapResult = (element) => {
             return {
-              id: element._id,
-              name: element.described,
-              image: element.image.map((elementImage) => ({
-                url: elementImage.url,
-              })),
-              video: element.video,
-              feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
-              mark_comment: (element.comment_list.length + element.mark_list.length).toString(),
-              is_felt: "0",
-              author: {
-                id: element.author.id.toString(),
-                username: element.author.username,
-                avatar: element.author.avatar,
-              },
-              described: element.described,
+                id: element.item._id,
+                name: element.item.described,
+                image: element.item.image.map((elementImage) => ({
+                    url: elementImage.url,
+                })),
+                video: element.item.video,
+                feel: (
+                    element.item.kudos_list.length +
+                    element.item.disappointed_list.length
+                ).toString(),
+                mark_comment: (
+                    element.item.comment_list.length +
+                    element.item.mark_list.length
+                ).toString(),
+                is_felt: '0',
+                author: {
+                    id: element.item.author.id.toString('hex'),
+                    username: element.item.author.username,
+                    avatar: element.item.author.avatar,
+                },
+                described: element.item.described,
             };
-          };
+        };
 
-        // Trả về kết quả đã được sắp xếp
+        // Return the sorted results
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            data: sortedResults.map(mapResult),
+            data: regexResults.map(mapResult),
         });
 
         // Cập nhật danh sách tìm kiếm đã lưu của người dùng
@@ -1045,7 +1057,6 @@ const search = async (req, res) => {
         }
     }
 }; */
-
 const get_saved_search = async (req, res) => {
     var { token, index, count } = req.query;
     const { _id } = req.userDataPass;
