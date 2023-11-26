@@ -1,21 +1,17 @@
 const dotenv = require('dotenv');
 dotenv.config();
-// const fs = require("fs");
-// const formidable = require("formidable");
-// const { getVideoDurationInSeconds } = require("get-video-duration");
-// const mongoose = require("mongoose");
+
 const Fuse = require('fuse.js');
 const Post = require('../models/post.model.js');
 const User = require('../models/user.model.js');
 const ReportPost = require('../models/report.post.model.js');
-const Comment = require('../models/comment.model');
+
 const Notification = require('../models/notification.model');
 const formidableHelper = require('../helpers/formidable.helper');
 const cloudHelper = require('../helpers/cloud.helper.js');
 
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
-const { Mongoose } = require('mongoose');
 
 const deletePostAll = async (req, res) => {
     var userAll = await User.find({});
@@ -28,7 +24,7 @@ const deletePostAll = async (req, res) => {
             });
         })
     );
-    // userAll.save();
+
     await Post.deleteMany({ _id: { $ne: null } });
     res.status(200).json({
         message: 'drop ok',
@@ -36,31 +32,67 @@ const deletePostAll = async (req, res) => {
 };
 
 const addPost = async (req, res) => {
-    const { token, described, state, can_edit, status } = req.query;
+    const { described, state, status } = req.query;
     const { _id } = req.userDataPass;
-    const images = req.files['image'];
-    const video = req.files['video'];
-    // validate input
+    const images = req.files && req.files['image'];
+    const video = req.files && req.files['video'];
+
     try {
-        var newPost;
-        var result = await formidableHelper.parse(req);
         const userData = await User.findOne({ _id: _id });
-        const currentCoin = userData.coins;
-        if (currentCoin < 4) {
+        if (userData.active !== 1) {
             return res.status(200).json({
-                code: statusCode.OK,
-                message: 'Not enough coin',
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
             });
         }
 
+        const currentCoin = userData.coins;
+        if (currentCoin < 4) {
+            return res.status(200).json({
+                code: statusCode.NOT_ENOUGHT_COINS,
+                message: statusMessage.NOT_ENOUGHT_COINS,
+            });
+        }
+        if (images && video) {
+            return res.status(200).json({
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
+            });
+        }
+
+        if (images && images.length > 4) {
+            return res.status(200).json({
+                code: statusCode.MAXIMUM_NUMBER_OF_IMAGES,
+                message: statusMessage.MAXIMUM_NUMBER_OF_IMAGES,
+            });
+        }
+
+        if (video && video.length > 1) {
+            return res.status(200).json({
+                code: statusCode.MAXIMUM_NUMBER_OF_VIDEO,
+                message: statusMessage.MAXIMUM_NUMBER_OF_VIDEO,
+            });
+        }
+
+        var newPost;
+        var result = await formidableHelper.parse(req);
+
         if (video) {
-            var result2 = await cloudHelper.upload(result.data[0], 'video');
+            video.map((element) => {
+                if (element.size > 1024 * 1024 * 4) {
+                    console.log('quá 4mb dung lượng tối đa cho phép');
+                    return res.status(200).json({
+                        code: statusCode.FILE_SIZE_IS_TOO_BIG,
+                        message: statusMessage.FILE_SIZE_IS_TOO_BIG,
+                    });
+                }
+            })
+            var resultUploadVideo = await cloudHelper.upload(result.data[0], 'video');
             newPost = await new Post({
                 described: described,
                 state: state,
                 status: status,
-                video: result2,
-                // thumbnail: {url: result2.url.slice(0, result2.length-3)+"png"},
+                video: resultUploadVideo,
                 created: Date.now(),
                 modified: Date.now(),
                 like: 0,
@@ -69,7 +101,17 @@ const addPost = async (req, res) => {
                 author: _id,
             }).save();
         } else if (images) {
-            var result2 = await Promise.all(
+            images.map((image) => {
+                if (image.size > 1024 * 1024 * 4) {
+                    console.log('quá 4mb dung lượng tối đa cho phép');
+                    return res.status(200).json({
+                        code: statusCode.FILE_SIZE_IS_TOO_BIG,
+                        message: statusMessage.FILE_SIZE_IS_TOO_BIG,
+                    });
+                }
+            })
+
+            var resultUploadImage = await Promise.all(
                 images.map((element) => {
                     return cloudHelper.upload(element);
                 })
@@ -78,7 +120,7 @@ const addPost = async (req, res) => {
                 described: described,
                 state: state,
                 status: status,
-                image: result2,
+                image: resultUploadImage,
                 created: Date.now(),
                 modified: Date.now(),
                 like: 0,
@@ -115,17 +157,17 @@ const addPost = async (req, res) => {
                 },
             }
         );
+        
+        var postUrl = (process.env.APP_URL || "http://localhost:3000/it4788") + "/post/" + newPost._id;
 
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
-            // data: newPost,
             data: {
                 id: newPost._id,
-                url: null,
+                url: postUrl.toString(),
                 coins: updatedCoin.toString(),
             },
-            // user: userData
         });
         try {
             var newNotification = await new Notification({
@@ -160,18 +202,11 @@ const addPost = async (req, res) => {
             console.log(error);
         }
     } catch (error) {
-        console.log('error');
-        if (error == statusCode.FILE_SIZE_IS_TOO_BIG) {
-            return res.status(200).json({
-                code: statusCode.FILE_SIZE_IS_TOO_BIG,
-                message: statusMessage.FILE_SIZE_IS_TOO_BIG,
-            });
-        } else {
-            return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR,
-            });
-        }
+        console.log(error);
+        return res.status(200).json({
+            code: statusCode.UNKNOWN_ERROR,
+            message: statusMessage.UNKNOWN_ERROR,
+        });
     }
 };
 

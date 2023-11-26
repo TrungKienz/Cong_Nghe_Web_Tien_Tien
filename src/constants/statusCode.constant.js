@@ -15,6 +15,7 @@ module.exports.UNKNOWN_ERROR = "1005";
 module.exports.FILE_SIZE_IS_TOO_BIG = "1006";
 module.exports.UPLOAD_FILE_FAILED = "1007";
 module.exports.MAXIMUM_NUMBER_OF_IMAGES = "1008";
+module.exports.MAXIMUM_NUMBER_OF_VIDEO = "1008";
 module.exports.NOT_ACCESS = "1009";
 module.exports.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER = "1010";
 module.exports.COULD_NOT_PUBLISH_THIS_POST = "1011";

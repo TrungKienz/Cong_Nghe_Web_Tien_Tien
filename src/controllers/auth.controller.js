@@ -135,21 +135,14 @@ const login = async (req, res) => {
             } else {
                 const userData = await User.findOne({ email: email });
                 if (userData) {
-                    // tìm được user có trong hệ thống
-                    const hashedPassword = md5(password); // mã hoá password
+                    const hashedPassword = md5(password);
                     if (hashedPassword == userData.password) {
-                        // kiểm tra password
-                        // tạo token
                         const accessToken = await jwtHelper.generateToken(
                             { _id: userData._id, email: userData.email },
                             accessTokenSecret,
                             accessTokenLife
                         );
-                        // const refreshToken = await jwtHelper.generateToken(
-                        //   userData,
-                        //   refreshTokenSecret,
-                        //   refreshTokenLife
-                        // );
+
                         // lưu token tương ứng vs user, nếu đã tốn tại token thì thay thế token
                         await User.findOneAndUpdate(
                             { _id: userData._id },
@@ -172,7 +165,7 @@ const login = async (req, res) => {
                             },
                         });
                     } else {
-                        // password không hợp lệ
+                    
                         console.log('password không hợp lệ');
                         return res.status(200).json({
                             code: statusCode.USER_IS_NOT_VALIDATED,
@@ -180,7 +173,7 @@ const login = async (req, res) => {
                         });
                     }
                 } else {
-                    // phonenumber chưa được đăng kí
+
                     console.log('email chưa được đăng kí');
                     res.status(200).json({
                         code: statusCode.USER_IS_NOT_VALIDATED,
