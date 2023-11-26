@@ -15,6 +15,7 @@ module.exports.UNKNOWN_ERROR = 'Unknown error';
 module.exports.FILE_SIZE_IS_TOO_BIG = 'File size is too big';
 module.exports.UPLOAD_FILE_FAILED = 'Upload file failed';
 module.exports.MAXIMUM_NUMBER_OF_IMAGES = 'Maximum number of images';
+module.exports.MAXIMUM_NUMBER_OF_VIDEO = 'Maximum number of video';
 module.exports.NOT_ACCESS = 'Not access';
 module.exports.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER =
     'Action has been done previously by this user';

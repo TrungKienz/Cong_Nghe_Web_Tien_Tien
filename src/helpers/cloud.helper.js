@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -14,7 +13,6 @@ let upload = (fileUp, type) => {
             cloudinary.uploader
                 .upload(path, { resource_type: 'video' })
                 .then((result) => {
-                    // console.log(result)
                     resolve({
                         url: result.url,
                         thumb:

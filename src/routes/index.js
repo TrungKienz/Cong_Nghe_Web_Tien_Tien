@@ -15,8 +15,8 @@ const commentRouter = require('./comment.route');
 const conversationRouter = require('./conversation.route');
 
 const cpUpload = upload.fields([
-    { name: 'image', maxCount: 4 },
-    { name: 'video', maxCount: 1 },
+    { name: 'image', maxCount: 10 },
+    { name: 'video', maxCount: 5 },
     { name: 'avatar', maxCount: 1 },
     { name: 'avatar[]', maxCount: 1 },
     { name: 'cover_image', maxCount: 1 },
