@@ -7,6 +7,44 @@ const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
 const md5 = require('md5');
 
+function isValidUsername(username, email) {
+    // Kiểm tra chiều dài chuỗi
+    const minLength = 3;
+    const maxLength = 18;
+    const emailAddress = email.split('@')[0];
+
+    //Kiểm tra xem email có trùng với username hay không
+    if (username == emailAddress) {
+        return false;
+    }
+
+    if (username.length < minLength || username.length > maxLength) {
+        return false;
+    }
+
+    // Kiểm tra ký tự đặc biệt
+    const specialChars = /[!@#$%^&*(),.?":{}|<>]/;
+    if (specialChars.test(username)) {
+        return false;
+    }
+
+    // Kiểm tra xem chuỗi có giống địa chỉ email hay không
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailPattern.test(username)) {
+        return false;
+    }
+
+    // Kiểm tra xem chuỗi có giống địa chỉ URL hay không
+    const urlPattern = /^(ftp|http|https):\/\/[^ "]+$/;
+    if (urlPattern.test(username)) {
+        return false;
+    }
+
+    // Nếu không có vấn đề nào, chuỗi được coi là hợp lệ
+    return true;
+}
+
+
 const logout = async (req, res) => {
     const { _id } = req.userDataPass;
     try {
@@ -33,12 +71,25 @@ const changeInfoAfterSignup = async (req, res) => {
     const avatar = req.files && req.files['avatar'];
     const timeCurrent = Date.now();
     try {
+
+        //Kiểm tra xem username có hợp lệ hay không
+        const isValidName = isValidUsername(username, email);
+        
+        if (isValidName == false) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        }
+
+        // Username là trường bắt buộc
         if (!username) {
             return res.status(200).json({
                 code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
                 message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
             });
-        } 
+        }
+
         if (avatar) {
             if (avatar[0].size > 1024 * 1024 * 4) {
                 console.log('quá 4mb dung lượng tối đa cho phép');
