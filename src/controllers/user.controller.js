@@ -393,7 +393,7 @@ const check_new_version = async (req, res) => {
     const { _id, active } = req.userDataPass;
     try {
         if (!last_update) {
-            throw Error('params');
+            throw new Error('params');
         }
         var versionData = await Version.find({}).sort({ created: 1 });
         var userData = await User.findById(_id)
@@ -441,20 +441,22 @@ const check_new_version = async (req, res) => {
                 },
                 badge:
                     countNewNoti >= 100
-                        ? (countNewNoti = '99+')
+                        ? (countNewNoti = "99+")
                         : countNewNoti.toString(),
-                unread_message: unreadCount.toString(),
+                unread_message: unreadCount >= 100
+                ? (unreadCount = "99+")
+                :unreadCount.toString(),
                 now: versionData[0].version,
             },
         });
     } catch (error) {
         if (error.message == 'params') {
-            return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR,
+            return res.status(500).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
             });
         } else {
-            return res.status(200).json({
+            return res.status(500).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
             });
