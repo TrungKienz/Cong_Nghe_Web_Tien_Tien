@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema({
     devtoken: String,
     address: String,
     created: Date,
+    updateCodeDate: Date,
     requestedFriends: [
         {
             author: {
