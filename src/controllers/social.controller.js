@@ -13,20 +13,20 @@ const addFriend = async (req, res) => {
         //#region check params
         if (!(user_id !== undefined)) {
             // Check if params are provided
+            console.log("Missing user_id")
             throw {
                 code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
                 message:
-                    statusMessage.PARAMETER_IS_NOT_ENOUGHT +
-                    ' - Missing user_id',
+                    statusMessage.PARAMETER_IS_NOT_ENOUGHT 
             };
         }
 
         if (user_id.toString() == _id.toString()) {
+            console.log("User cannot send request to themself")
             throw {
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ' - User cannot send request to themself',
+                    statusMessage.PARAMETER_VALUE_IS_INVALID 
             };
         }
         let totalRequestsSent = -1;
@@ -44,6 +44,33 @@ const addFriend = async (req, res) => {
             };
         }
 
+        //Check if user has blocked target's id
+        const blockedList = ownerData.blockedIds.toObject()
+        blockedList.forEach(blockedId => {
+            if (blockedId == user_id)
+            {
+                console.log("USER CANNOT SEND FRIEND REQUEST TO BLOCKED USERS!")
+                throw {
+                    code: statusCode.METHOD_IS_INVALID,
+                    message: statusMessage.METHOD_IS_INVALID,
+            };
+            }
+        });
+
+        //Check if user is already friend with target
+        const friendsList = ownerData.friends.toObject()
+        friendsList.forEach(blockedId => {
+            if (blockedId._id.toString()== user_id)
+            {
+                console.log("USER CANNOT SEND FRIEND REQUEST TO FRIENDS")
+                throw {
+                    code: statusCode.METHOD_IS_INVALID,
+                    message: statusMessage.METHOD_IS_INVALID,
+            };
+            }
+        });
+
+
         //Check if friend request already exists
         await User.findOne({ _id: _id }).exec(async (err, user) => {
             let newArr = [];
@@ -59,7 +86,6 @@ const addFriend = async (req, res) => {
                 };
                 totalRequestsSent += 1;
                 ownerData.sendRequestedFriends.push(_requestInfo); // Save sent friend request
-                await ownerData.save();
             }
         });
 
@@ -74,6 +100,21 @@ const addFriend = async (req, res) => {
                 message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
             };
         }
+
+        //Check if target has blocked user
+        const targetBlockedList = targetData.blockedIds.toObject()
+        targetBlockedList.forEach(blockedId => {
+            if (blockedId == _id.toString())
+            {
+                console.log("TARGET HAS BLOCKED USER")
+                throw {
+                    code: statusCode.METHOD_IS_INVALID,
+                    message: statusMessage.METHOD_IS_INVALID,
+            };
+            }
+        });
+
+
         await User.findOne({ _id: user_id }).exec(async (err, user) => {
             let newArr = [];
             let arr = user.requestedFriends.toObject();
@@ -88,7 +129,6 @@ const addFriend = async (req, res) => {
 
                 //console.log(!check_array_contains(newArr, _requestInfo))
                 targetData.requestedFriends.push(_requestInfo); // Save sent friend request
-                await targetData.save();
             }
         });
         //targetData.requestedFriends.push(_id) // Save received friend request
@@ -98,6 +138,8 @@ const addFriend = async (req, res) => {
             console.log("Sleep")
             await sleep(500)
         }
+        await targetData.save();
+        await ownerData.save();
 
         return res.status(200).json({
             code: statusCode.OK,
@@ -120,21 +162,21 @@ const getListOfFriendSuggestions = async (req, res) => {
         //#region params check
         if (!(index !== undefined) || !(count !== undefined)) {
             // Check if params are provided
+            console.log("Missing index or count")
             throw {
                 code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
                 message:
-                    statusMessage.PARAMETER_IS_NOT_ENOUGHT +
-                    ' - Missing index or count',
+                    statusMessage.PARAMETER_IS_NOT_ENOUGHT 
             };
         }
 
         if (isNaN(+index) || isNaN(+count)) {
             // Check if params are of number type
+            console.log("index or count is not a number")
             throw {
                 code: statusCode.PARAMETER_TYPE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_TYPE_IS_INVALID +
-                    ' - index or count is not a number',
+                    statusMessage.PARAMETER_TYPE_IS_INVALID
             };
         }
 
@@ -161,7 +203,7 @@ const getListOfFriendSuggestions = async (req, res) => {
         //#region get list of all users
         let newList = [];
         //const filter = { settings.}
-        const usersData = await User.find().select('avatar username friends').exec();
+        const usersData = await User.find().select('avatar username friends blockedIds').exec();
         if (!usersData) {
             //For some reason cannot find any user
             throw {
@@ -171,11 +213,15 @@ const getListOfFriendSuggestions = async (req, res) => {
         }
 
         usersData.forEach((user) => {
+            let isBlocked = false
+            const targetBlockedList = user.blockedIds.toObject()
+
             const same_friends_count = count_same_friends(user, ownerData);
             user = user.toObject(); // ew
             user.user_id = user._id.toString()
             user.same_friends = same_friends_count;
             delete user.friends;
+            delete user.blockedIds
             if (user._id.toString() != _id.toString() && check_array_contains(ownerFriendsList, user._id.toString()) == false) {
                 //Exclude the user's id
                 delete user._id
@@ -186,12 +232,23 @@ const getListOfFriendSuggestions = async (req, res) => {
                     same_friends: user.same_friends.toString()
                 }
                 blockedList.forEach(element => {
-                    console.log()
-                    if (element != user.id)
+                    if (element == user.user_id)
                     {
-                        newList.push(_formatted);
+                        isBlocked = true
                     }
                 });
+
+                targetBlockedList.forEach(element => {
+                    if (element == _id.toString())
+                    {
+                        isBlocked = true
+                    }
+                });
+
+                if (!isBlocked)
+                {
+                    newList.push(_formatted)
+                }
             }
         });
         //#endregion
@@ -203,11 +260,11 @@ const getListOfFriendSuggestions = async (req, res) => {
         newList = shuffle(newList);
 
         if (index > newList.length - 1) {
+            console.log("Provided index is out of range")
             throw {
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ' - Provided index is out of range',
+                    statusMessage.NO_DATA_OR_END_OF_LIST_DATA 
             };
         }
 
@@ -238,21 +295,21 @@ const getListOfFriendRequests = async (req, res) => {
         //#region params check
         if (!(index !== undefined) || !(count !== undefined)) {
             // Check if params are provided
+            console.log("Missing index or count")
             throw {
                 code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
                 message:
-                    statusMessage.PARAMETER_IS_NOT_ENOUGHT +
-                    ' - Missing index or count',
+                    statusMessage.PARAMETER_IS_NOT_ENOUGHT 
             };
         }
 
         if (isNaN(+index) || isNaN(+count)) {
             // Check if params are of number type
+            console.log("index or count is not a number")
             throw {
                 code: statusCode.PARAMETER_TYPE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_TYPE_IS_INVALID +
-                    ' - index or count is not a number',
+                    statusMessage.PARAMETER_TYPE_IS_INVALID 
             };
         }
         //#endregion
@@ -262,6 +319,7 @@ const getListOfFriendRequests = async (req, res) => {
         let infoArr = [];
 
         let user = await User.findOne({ _id: _id });
+        const blockedList = user.blockedIds.toObject()
 
         let arr = user.requestedFriends.toObject();
         arr.forEach((request) => {
@@ -273,9 +331,11 @@ const getListOfFriendRequests = async (req, res) => {
         });
 
         for (i = 0; i < infoArr.length; i++) {
+            let isBlocked = false
             let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select(
-                'username avatar friends'
+                'username avatar friends blockedIds'
             );
+            const targetBlockedList = _userInfo.blockedIds.toObject()
             const same_friends_count = count_same_friends(_userInfo, user);
             _userInfo = _userInfo.toObject();
             _userInfo.created = infoArr[i].created;
@@ -283,6 +343,8 @@ const getListOfFriendRequests = async (req, res) => {
             _userInfo.same_friends = same_friends_count;
             delete _userInfo._id
             delete _userInfo.friends;
+            delete _userInfo.blockedIds;
+            
             const _formatted = {
                 id: _userInfo.id,
                 username: _userInfo.username,
@@ -290,18 +352,36 @@ const getListOfFriendRequests = async (req, res) => {
                 same_friends: _userInfo.same_friends.toString(),
                 created: _userInfo.created
             }
-            newList.push(_formatted);
+
+            blockedList.forEach(element => {
+                if (element == _userInfo.id)
+                {
+                    isBlocked = true
+                }
+            });
+
+            targetBlockedList.forEach(element => {
+                if (element == _id.toString())
+                {
+                    isBlocked = true
+                }
+            });
+
+            if (!isBlocked)
+            {
+                newList.push(_formatted);
+            }
         }
         //#endregion
 
         //#region adjust list with index and count
 
         if (index > newList.length - 1 && newList.length > 0) {
+            console.log("Provided index is out of range")
             throw {
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ' - Provided index is out of range',
+                    statusMessage.NO_DATA_OR_END_OF_LIST_DATA
             };
         }
 
@@ -332,21 +412,21 @@ const getListOfUserFriends = async (req, res) => {
         //#region params check
         if (!(index !== undefined) || !(count !== undefined)) {
             // Check if params are provided
+            console.log("Missing index or count")
             throw {
                 code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
                 message:
-                    statusMessage.PARAMETER_IS_NOT_ENOUGHT +
-                    ' - Missing index or count',
+                    statusMessage.PARAMETER_IS_NOT_ENOUGHT
             };
         }
 
         if (isNaN(+index) || isNaN(+count)) {
             // Check if params are of number type
+            console.log("index or count is not a number")
             throw {
                 code: statusCode.PARAMETER_TYPE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_TYPE_IS_INVALID +
-                    ' - index or count is not a number',
+                    statusMessage.PARAMETER_TYPE_IS_INVALID 
             };
         }
         //#endregion
@@ -354,6 +434,7 @@ const getListOfUserFriends = async (req, res) => {
         //#region get full list of all users
         let newList = [];
         let infoArr = [];
+        let storedIds = [];
 
         let targetId = user_id ? user_id : _id; //Get friends list from either user or provided user_id
         let user = await User.findOne({ _id: targetId });
@@ -370,6 +451,9 @@ const getListOfUserFriends = async (req, res) => {
         });
 
         for (i = 0; i < infoArr.length; i++) {
+            let isBlocked = false
+            let alreadyExists = false
+
             let _userInfo = await User.findOne({ _id: infoArr[i]._id }).select(
                 'username avatar friends'
             );
@@ -381,6 +465,14 @@ const getListOfUserFriends = async (req, res) => {
             
             _userInfo.created = infoArr[i].created;
             _userInfo.id = _userInfo._id.toString()
+            if (!check_array_contains(storedIds, _userInfo.id))
+            {
+                storedIds.push(_userInfo.id)
+            }else
+            {
+                alreadyExists = true
+            }
+            
             
             
             // console.log(check_array_contains(blockedList, _userInfo.id))
@@ -398,13 +490,15 @@ const getListOfUserFriends = async (req, res) => {
                 created: _userInfo.created
             }
             blockedList.forEach(element => {
-                console.log()
                 if (element == _userInfo.id)
                 {
-                    return
+                    isBlocked = true
                 }
             });
-            newList.push(_formatted);
+            if (!isBlocked && !alreadyExists)
+            {
+                newList.push(_formatted);
+            }
             
         }
         //#endregion
@@ -412,11 +506,11 @@ const getListOfUserFriends = async (req, res) => {
         //#region adjust list with index and count
 
         if (index > newList.length - 1 && newList.length > 0) {
+            console.log("Provided index is out of range")
             throw {
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ' - Provided index is out of range',
+                    statusMessage.NO_DATA_OR_END_OF_LIST_DATA 
             };
         }
 
@@ -447,21 +541,21 @@ const getListOfBlockedUsers = async (req, res) => {
         //#region params check
         if (!(index !== undefined) || !(count !== undefined)) {
             // Check if params are provided
+            console.log("Missing index or count")
             throw {
                 code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
                 message:
-                    statusMessage.PARAMETER_IS_NOT_ENOUGHT +
-                    ' - Missing index or count',
+                    statusMessage.PARAMETER_IS_NOT_ENOUGHT 
             };
         }
 
         if (isNaN(+index) || isNaN(+count)) {
             // Check if params are of number type
+            console.log("index or count is not a number")
             throw {
                 code: statusCode.PARAMETER_TYPE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_TYPE_IS_INVALID +
-                    ' - index or count is not a number',
+                    statusMessage.PARAMETER_TYPE_IS_INVALID 
             };
         }
         //#endregion
@@ -503,11 +597,11 @@ const getListOfBlockedUsers = async (req, res) => {
         //#region adjust list with index and count
 
         if (index > newList.length - 1 && newList.length > 0) {
+            console.log("Provided index is out of range")
             throw {
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ' - Provided index is out of range',
+                    statusMessage.NO_DATA_OR_END_OF_LIST_DATA 
             };
         }
 
@@ -537,20 +631,20 @@ const processFriendRequest = async (req, res) => {
         //#region params check
         if (!(user_id !== undefined) || !(is_accept !== undefined)) {
             // Check if params are provided
+            console.log("Missing user_id or is_accept")
             throw {
                 code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
                 message:
-                    statusMessage.PARAMETER_IS_NOT_ENOUGHT +
-                    ' - Missing user_id or is_accept',
+                    statusMessage.PARAMETER_IS_NOT_ENOUGHT 
             };
         }
 
         if (!check_array_contains([0, 1], +is_accept)) {
+            console.log("is_accept must be either 0 or 1")
             throw {
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ' - is_accept must be either 0 or 1',
+                    statusMessage.PARAMETER_VALUE_IS_INVALID 
             };
         }
 
@@ -563,6 +657,19 @@ const processFriendRequest = async (req, res) => {
             };
         }
         //#endregion
+
+        //Check if user has blocked target's id
+        const blockedList = ownerData.blockedIds.toObject()
+        blockedList.forEach(blockedId => {
+            if (blockedId == user_id)
+            {
+                console.log("USER CANNOT ACCEPT FRIEND REQUEST FROM BLOCKED USERS!")
+                throw {
+                    code: statusCode.METHOD_IS_INVALID,
+                    message: statusMessage.METHOD_IS_INVALID,
+            };
+            }
+        });
 
         //#region Check if friend request exists
         let listOfFriendRequests = ownerData.requestedFriends.toObject();
@@ -590,6 +697,20 @@ const processFriendRequest = async (req, res) => {
                 message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
             };
         }
+
+        //Check if target has blocked user
+        const targetBlockedList = targetData.blockedIds.toObject()
+        targetBlockedList.forEach(blockedId => {
+            if (blockedId == _id.toString())
+            {
+                console.log("TARGET HAS BLOCKED USER, CANNOT ACCEPT FRIEND REQUEST")
+                throw {
+                    code: statusCode.METHOD_IS_INVALID,
+                    message: statusMessage.METHOD_IS_INVALID,
+            };
+            }
+        });
+
 
         let listOfSentFriendRequest =
             targetData.sendRequestedFriends.toObject();
