@@ -61,10 +61,7 @@ function validationPasword(password, email) {
 }
 
 const signup = async (req, res) => {
-    // const { phonenumber, password, uuid } = req.body;
     const { password, uuid, email } = req.query;
-    // phonenumber không tồn tại, độ dài khác 10, không có số không đầu tiên,
-    // chứa kí tự không phải số
     if (email && password && uuid) {
         try {
             if (
@@ -97,14 +94,9 @@ const signup = async (req, res) => {
                     return res.status(200).json({
                         code: statusCode.OK,
                         message: statusMessage.OK,
-                        // data: {
-                        //     id: user._id,
-                        //     token: accessToken,
-                        // },
                         data: {},
                     });
                 } else {
-                    // phonenumber đã được đăng kí từ trước
                     return res.status(200).json({
                         code: statusCode.USER_EXISTED,
                         message: statusMessage.USER_EXISTED,
@@ -235,16 +227,29 @@ const getVerifyCode = async (req, res) => {
         const userData = await User.findOne({ email: email });
 
         if (userData) {
+            // Kiểm tra xem xem có gửi yêu cầu trong thời gian quá ngắn hay không
+            const currentDate = Date.now();
+            const twoMinuteInMillis = 2*60*1000;
+            if (currentDate - userData.updateCodeDate <= twoMinuteInMillis) {
+                return res.status(200).json({
+                    code: statusCode.NOT_ACCESS,
+                    message:
+                        statusMessage.NOT_ACCESS,
+                }); 
+            }
+
+            // Kiểm tra xem tài khoản đã được active hay chưa
             if (userData.active === 1) {
                 return res.status(200).json({
-                    code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                    code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
                     message:
-                        statusMessage.PARAMETER_VALUE_IS_INVALID,
+                        statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
                 });
             }
             const verifyCode = generateRandom6DigitNumber();
             
             userData.verifyCode = verifyCode;
+            userData.updateCodeDate = Date.now();
             await userData.save();
             emailValidate(email, verifyCode);
             return res.status(200).json({
