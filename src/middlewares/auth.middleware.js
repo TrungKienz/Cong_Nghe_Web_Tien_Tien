@@ -12,16 +12,14 @@ const isAuth = async (req, res, next) => {
         req.query.token ||
         req.headers['x-access-token'] ||
         req.headers['authorization'];
-    console.log('Token: ', tokenFromClient);
-
-    if (tokenFromClient.includes('Bearer')) {
-        const arrayToken = tokenFromClient.split(' ');
-        tokenFromClient = arrayToken[1];
-    }
 
     if (tokenFromClient) {
+        if (tokenFromClient.includes('Bearer')) {
+            const arrayToken = tokenFromClient.split(' ');
+            tokenFromClient = arrayToken[1];
+        }
+
         try {
-            // if(tokenFromClient)
             const decoded = await jwtHelper.verifyToken(
                 tokenFromClient,
                 accessTokenSecret
@@ -46,23 +44,18 @@ const isAuth = async (req, res, next) => {
         } catch (error) {
             console.log('error', error.message);
             return res.status(401).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-                //server: "Lỗi token không hợp lệ"
+                code: statusCode.TOKEN_IS_INVALID,
+                message: statusMessage.TOKEN_IS_INVALID,
             });
         }
     } else {
         return res.status(403).json({
             code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
             message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
-            //server: "Lỗi token không hợp lệ"
         });
     }
 };
-//this is my commets
-// No operation will do in here
-// And here
-// very useless :))))
+
 module.exports = {
-    isAuth: isAuth,
+    isAuth,
 };
