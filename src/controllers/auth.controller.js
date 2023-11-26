@@ -174,7 +174,7 @@ const login = async (req, res) => {
                                 id: userData._id,
                                 username: userData.email,
                                 token: accessToken,
-                                avatar: userData.avatar || "-1",
+                                avatar: userData.avatar || '-1',
                                 active: userData.active.toString(),
                                 coins: userData.coins.toString(),
                             },
@@ -238,12 +238,11 @@ const getVerifyCode = async (req, res) => {
             if (userData.active === 1) {
                 return res.status(200).json({
                     code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                    message:
-                        statusMessage.PARAMETER_VALUE_IS_INVALID,
+                    message: statusMessage.PARAMETER_VALUE_IS_INVALID,
                 });
             }
             const verifyCode = generateRandom6DigitNumber();
-            
+
             userData.verifyCode = verifyCode;
             await userData.save();
             emailValidate(email, verifyCode);
@@ -310,7 +309,7 @@ const checkVerifyCode = async (req, res) => {
                     data: {
                         // token: accessToken,
                         id: userData._id,
-                        active: "1",
+                        active: '1',
                     },
                 });
             } else {

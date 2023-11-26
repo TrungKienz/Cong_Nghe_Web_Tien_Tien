@@ -5,7 +5,7 @@ const User = require('../models/user.model.js');
 const Comment = require('../models/comment.model');
 const Mark = require('../models/mark.model.js');
 const Notification = require('../models/notification.model');
-const {addNotification} = require('./notification.controller.js');
+const { addNotification } = require('./notification.controller.js');
 
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
@@ -182,11 +182,11 @@ const setMarkComment = async (req, res) => {
         let resultData;
 
         if (mark_id && (type === '1' || type === '0')) {
-
             if (userData.mark_list.includes(id)) {
                 return res.status(200).json({
                     code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-                    message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                    message:
+                        statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
                 });
             }
 
@@ -225,22 +225,22 @@ const setMarkComment = async (req, res) => {
             post.comment_list.push(newComment._id);
             await post.save();
 
-            console.log("userData.friends", userData.friends)
+            console.log('userData.friends', userData.friends);
             // Populate the post information with the new comment
             resultData = await populatePostInformation(id);
 
             const inputNotiData = {
-                notificationType: "comment",
+                notificationType: 'comment',
                 postId: id,
                 username: userData.username,
                 lastUpdate: Date.now(),
                 avatar: userData.avatar,
-            }
+            };
 
             const notiData = await addNotification(inputNotiData, _id);
             const objectNotiId = mongoose.Types.ObjectId(notiData._id);
-            
-            console.log("notiData", notiData);
+
+            console.log('notiData', notiData);
             await User.findOneAndUpdate(
                 { _id: post.author },
                 {
@@ -255,7 +255,10 @@ const setMarkComment = async (req, res) => {
         const { mark_list, comment_list } = resultData;
 
         const resMark = mark_list.slice(parsedIndex, parsedIndex + parsedCount);
-        const resComment = comment_list.slice(parsedIndex, parsedIndex + parsedCount);
+        const resComment = comment_list.slice(
+            parsedIndex,
+            parsedIndex + parsedCount
+        );
 
         return res.status(200).json({
             code: statusCode.OK,
@@ -281,7 +284,8 @@ const setMarkComment = async (req, res) => {
             },
             action: {
                 code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-                message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                message:
+                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
             },
             blocked: {
                 code: statusCode.NOT_ACCESS,
@@ -293,7 +297,8 @@ const setMarkComment = async (req, res) => {
             },
         };
 
-        const response = errorResponses[error.message] || errorResponses.default;
+        const response =
+            errorResponses[error.message] || errorResponses.default;
 
         return res.status(200).json(response);
     }
@@ -318,7 +323,6 @@ async function populatePostInformation(id) {
             },
         });
 }
-
 
 module.exports = {
     getMarkComment,

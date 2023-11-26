@@ -38,5 +38,4 @@ const addNotification = async (data, _id) => {
     }
 };
 
-
 module.exports = { addNotification };

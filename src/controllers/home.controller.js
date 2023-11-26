@@ -2,19 +2,17 @@ const User = require('../models/user.model.js');
 const Notification = require('../models/notification.model.js');
 const Post = require('../models/post.model.js');
 
-
 const formidableHelper = require('../helpers/formidable.helper');
 const { sameFriends } = require('../helpers/sameFriends.helper.js');
 const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
 const { checkNewNotification } = require('./notification.controller.js');
 
-
 const checkNewItem = async (req, res) => {
     try {
         const { last_id, category_id } = req.query;
         const { _id } = req.userDataPass;
-        const lastId = last_id || "0";
+        const lastId = last_id || '0';
 
         // Validate category_id
         if (category_id < 0 || category_id > 3) {
@@ -28,18 +26,20 @@ const checkNewItem = async (req, res) => {
             options: {
                 created: -1,
             },
-        })
+        });
 
         var newItems = 0;
-        console.log(userData.postIds.length)
-        const lastIdIndex = userData.postIds.findIndex(element => element._id == lastId);
-        console.log(lastIdIndex)
+        console.log(userData.postIds.length);
+        const lastIdIndex = userData.postIds.findIndex(
+            (element) => element._id == lastId
+        );
+        console.log(lastIdIndex);
         if (lastIdIndex !== -1) {
             newItems = lastIdIndex;
-        } else if (lastId == 0){
+        } else if (lastId == 0) {
             newItems = userData.postIds.length;
         } else {
-            throw Error('PARAMETER_VALUE_IS_INVALID')
+            throw Error('PARAMETER_VALUE_IS_INVALID');
         }
 
         return res.status(200).json({
@@ -56,7 +56,7 @@ const checkNewItem = async (req, res) => {
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
             });
         } else {
-            console.log(error)
+            console.log(error);
             return res.status(200).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
@@ -64,7 +64,6 @@ const checkNewItem = async (req, res) => {
         }
     }
 };
-
 
 const getNotification = async (req, res) => {
     var { index, count } = req.query;
@@ -106,7 +105,7 @@ const getNotification = async (req, res) => {
 
         var resData = [];
 
-        console.log(userData.notifications)
+        console.log(userData.notifications);
 
         userData.notifications.map((notification) => {
             resData.push({
@@ -118,17 +117,17 @@ const getNotification = async (req, res) => {
                 avatar: notification.avatar,
                 group: notification.group,
                 read: notification.read,
-            })
-        })
+            });
+        });
 
-        console.log(resData)
+        console.log(resData);
 
         var countNewNoti = 0;
         resData.map((data) => {
-            if (data.read === "0") {
+            if (data.read === '0') {
                 countNewNoti += 1;
             }
-        })
+        });
 
         return res.status(200).json({
             code: statusCode.OK,
@@ -140,7 +139,7 @@ const getNotification = async (req, res) => {
             badge: countNewNoti,
         });
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({
             code: statusCode.UNKNOWN_ERROR,
             message: statusMessage.UNKNOWN_ERROR,
@@ -153,20 +152,17 @@ const setReadNotification = async (req, res) => {
     const { _id } = req.userDataPass;
 
     try {
-        await Notification.findByIdAndUpdate(
-            notification_id,
-            {
-                $set: {
-                    read: "1",
-                }
-            }
-        );
+        await Notification.findByIdAndUpdate(notification_id, {
+            $set: {
+                read: '1',
+            },
+        });
 
         let newNoti = 0;
 
         const userData = await User.findById(_id).populate({
             path: 'notifications',
-            select: 'read last_update'
+            select: 'read last_update',
         });
 
         userData.notifications.forEach((notification) => {
@@ -192,7 +188,6 @@ const setReadNotification = async (req, res) => {
         });
     }
 };
-
 
 const setDevToken = async (req, res) => {
     const { token, devtype, devtoken } = req.query;
@@ -250,11 +245,10 @@ const getUserInfo = async (req, res) => {
     try {
         // Check if viewing own profile or other user's profile
         if (!user_id || user_id === _id) {
-            const userData = await User.findById(_id)
-                .populate({
-                    path: 'friends',
-                    select: '_id',
-                });
+            const userData = await User.findById(_id).populate({
+                path: 'friends',
+                select: '_id',
+            });
 
             const listing = userData.friends.length;
 
@@ -270,9 +264,9 @@ const getUserInfo = async (req, res) => {
                 city: userData.city || null,
                 country: userData.country || null,
                 listing: listing.toString(),
-                is_friend: "0",
-                online: "0",
-                coins: userData.coins || "0",
+                is_friend: '0',
+                online: '0',
+                coins: userData.coins || '0',
             };
 
             return res.status(200).json({
@@ -284,13 +278,19 @@ const getUserInfo = async (req, res) => {
 
         // Viewing other user's profile
         const otherUserData = await User.findById(user_id)
-            .select('_id username created description avatar cover_image link address city country friends blockedIds coins')
+            .select(
+                '_id username created description avatar cover_image link address city country friends blockedIds coins'
+            )
             .populate({
                 path: 'friends',
                 select: '_id username avatar',
             });
 
-        if (!otherUserData || otherUserData.is_blocked || otherUserData.blockedIds.includes(_id)) {
+        if (
+            !otherUserData ||
+            otherUserData.is_blocked ||
+            otherUserData.blockedIds.includes(_id)
+        ) {
             throw new Error('notfound');
         }
 
@@ -298,7 +298,7 @@ const getUserInfo = async (req, res) => {
         const is_friend = userData.friends.includes(user_id) ? '1' : '0';
 
         // const is_friend = req.userDataPass.friends.includes(user_id) ? '1' : '0';
-        console.log(is_friend)
+        console.log(is_friend);
 
         otherUserData.listing = otherUserData.friends.length;
 
@@ -314,9 +314,9 @@ const getUserInfo = async (req, res) => {
             city: otherUserData.city || null,
             country: otherUserData.country || null,
             listing: otherUserData.listing,
-            is_friend: is_friend || "0",
-            online: "0",
-            coins: otherUserData.coins || "0",
+            is_friend: is_friend || '0',
+            online: '0',
+            coins: otherUserData.coins || '0',
         };
 
         delete otherUserData.blockedIds;
@@ -341,8 +341,6 @@ const getUserInfo = async (req, res) => {
         }
     }
 };
-
-
 
 const setUserInfo = async (req, res) => {
     const {

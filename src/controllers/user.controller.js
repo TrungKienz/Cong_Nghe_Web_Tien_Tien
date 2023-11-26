@@ -392,36 +392,35 @@ const check_new_version = async (req, res) => {
             throw Error('params');
         }
         var versionData = await Version.find({}).sort({ created: 1 });
-        var userData = await User.findById(_id).populate({
-            path: 'notifications',
-            
-        }).populate({
-            path: 'conversations',
-            select: 'unread'
-        });
+        var userData = await User.findById(_id)
+            .populate({
+                path: 'notifications',
+            })
+            .populate({
+                path: 'conversations',
+                select: 'unread',
+            });
 
         var unreadCount = 0;
         userData.conversations.map((element) => {
-            if(element.unread === "1"){
+            if (element.unread === '1') {
                 unreadCount++;
             }
-        })
-        
+        });
+
         var resData = [];
         userData.notifications.map((notification) => {
             resData.push({
-                
                 notification_id: notification._id,
-                
-            })
-        })
-         console.log(userData);
+            });
+        });
+        console.log(userData);
         var countNewNoti = 0;
         resData.map((data) => {
-            if (data.read === "0") {
+            if (data.read === '0') {
                 countNewNoti += 1;
             }
-        })
+        });
 
         return res.status(200).json({
             code: statusCode.OK,
@@ -436,7 +435,10 @@ const check_new_version = async (req, res) => {
                     id: _id,
                     active: active.toString(),
                 },
-                badge: (countNewNoti >= 100) ? countNewNoti = "99+" : countNewNoti.toString(),
+                badge:
+                    countNewNoti >= 100
+                        ? (countNewNoti = '99+')
+                        : countNewNoti.toString(),
                 unread_message: unreadCount.toString(),
                 now: versionData[0].version,
             },
