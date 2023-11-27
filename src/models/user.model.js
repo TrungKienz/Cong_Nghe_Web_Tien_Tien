@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
             created: Date,
         },
     ],
-    
+
     sendRequestedFriends: [
         {
             receiver: {

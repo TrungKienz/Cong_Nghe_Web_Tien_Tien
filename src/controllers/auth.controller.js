@@ -240,7 +240,7 @@ const getVerifyCode = async (req, res) => {
                 });
             }
             const verifyCode = generateRandom6DigitNumber();
-            
+
             userData.verifyCode = verifyCode;
             userData.updateCodeDate = Date.now();
             await userData.save();

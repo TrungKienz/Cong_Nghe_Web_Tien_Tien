@@ -262,7 +262,7 @@ const getPost = async (req, res) => {
             })
             .populate({
                 path: 'mark_list',
-                select: 'type'
+                select: 'type',
             });
 
         // Post Validation
@@ -322,7 +322,7 @@ const getPost = async (req, res) => {
             category: isBlocked ? null : {
                 id: post._id,
                 name: post.described,
-                has_name: "0",
+                has_name: '0',
             },
             state: isBlocked ? null : post.state || "public",
             is_blocked: isBlocked ? "1" : "0",
@@ -350,7 +350,6 @@ const getPost = async (req, res) => {
             message: statusMessage.OK,
             data: responseData,
         });
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -405,12 +404,12 @@ const editPost = async (req, res) => {
                     message: 'Not enough coin',
                 });
             }
-            
+
             if (postData.author.toString() !== _id.toString()) {
                 return res.status(200).json({
                     code: statusCode.PARAMETER_VALUE_IS_INVALID,
                     message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-                })
+                });
             }
 
             if (described) {
@@ -470,7 +469,7 @@ const editPost = async (req, res) => {
                 // });
                 return res.status(200).json({
                     code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                    message: "Can not edit this post",
+                    message: 'Can not edit this post',
                 });
             } else {
                 // return res.status(200).json({
@@ -538,8 +537,7 @@ const deletePost = async (req, res) => {
                 },
             }
         );
-        
-        
+
         if (!result) {
             console.log('Khong tim thay bai viet');
             throw Error('Post is not existed');
@@ -624,8 +622,9 @@ const feel = async (req, res) => {
             postDataPre.kudos_list?.includes(_id)
         ) {
             return res.status(200).json({
-              code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-              message: statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                message:
+                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
             });
             // return res.status(200).json({
             //     code: statusCode.OK,
@@ -660,8 +659,8 @@ const feel = async (req, res) => {
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    disappointed: type == 0 ? "1" : "0",
-                    kudos: type == 1 ? "1" : "0",
+                    disappointed: type == 0 ? '1' : '0',
+                    kudos: type == 1 ? '1' : '0',
                 },
             });
         } else {
@@ -790,134 +789,7 @@ const like = async (req, res) => {
     }
 };
 
-
 const search = async (req, res) => {
-  var { keyword, index, count, user_id } = req.query;
-  const { _id } = req.userDataPass;
-
-  if (!user_id) {
-    return res.status(200).json({
-      code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
-      message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
-    });
-  }
-
-  try {
-    index = index ? index : 0;
-    count = count ? count : 20;
-
-    if (
-      !keyword ||
-      _id.toString() !== user_id ||
-      isNaN(index) ||
-      isNaN(count) ||
-      !index ||
-      !count
-    ) {
-      throw Error('params');
-    }
-
-    // Tìm kiếm các kết quả đủ từ và đúng thứ tự
-    var postData1 = await Post.find({
-      described: new RegExp(keyword, 'i'),
-    });
-
-    // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự
-    var postData2 = await Post.find({
-      $or: [
-        { keyword: new RegExp(keyword, 'i') },
-        { keyword: new RegExp(keyword.replace(' ', '|'), 'i') },
-      ],
-    }).populate({
-      path: 'author',
-      select: 'username avatar',
-    });
-
-    // Combine the search results into a single array
-    const postData = postData1.concat(postData2);
-
-    // Create a Fuse instance
-    const fuse = new Fuse(postData, {
-      keys: ['described'],
-    });
-
-    // Perform the search
-    const sortedResults = fuse.search(keyword);
-
-    const mapResult = (element) => {
-      return {
-        id: element.item._id,
-        name: element.item.described,
-        image: element.item.image.map((elementImage) => ({
-          url: elementImage.url,
-        })),
-        video: element.item.video,
-        feel: (element.item.kudos_list.length + element.item.disappointed_list.length).toString(),
-        mark_comment: (element.item.comment_list.length + element.item.mark_list.length).toString(),
-        is_felt: "0",
-        author: {
-          //id: typeof element.item.author.id === 'string' ? element.item.author.id : element.item.author.id.toString(),
-          id: element.item.author.id.toString('hex'),
-          username: element.item.author.username,
-          avatar: element.item.author.avatar,
-        },
-        described: element.item.described,
-      };
-    };
-
-    // Return the sorted results
-    res.status(200).json({
-      code: statusCode.OK,
-      message: statusMessage.OK,
-      data: sortedResults.map(mapResult),
-    });
-
-    // Cập nhật danh sách tìm kiếm đã lưu của người dùng
-    await User.findByIdAndUpdate(
-      _id,
-      {
-        $pull: {
-          savedSearch: {
-            keyword: keyword,
-          },
-        },
-      },
-      { new: true }
-    );
-
-    await User.findByIdAndUpdate(
-      _id,
-      {
-        $push: {
-          savedSearch: {
-            keyword: keyword,
-            created: Date.now(),
-          },
-        },
-      },
-      { new: true }
-    );
-  } catch (error) {
-    if (error.message == 'params') {
-      return res.status(500).json({
-        code: statusCode.PARAMETER_VALUE_IS_INVALID,
-        message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-      });
-    } else if (error.message == 'nodata') {
-      return res.status(500).json({
-        code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
-        message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
-      });
-    } else {
-      return res.status(500).json({
-        code: statusCode.UNKNOWN_ERROR,
-        message: statusMessage.UNKNOWN_ERROR,
-      });
-    }
-  }
-};
-
-/* const search = async (req, res) => {
     var { keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
 
@@ -959,39 +831,45 @@ const search = async (req, res) => {
             select: 'username avatar',
         });
 
-        // Sắp xếp kết quả theo ưu tiên
-        var sortedResults = [];
+        // Combine the search results into a single array
+        const postData = postData1.concat(postData2);
 
-        // Đưa các kết quả đủ từ và đúng thứ tự lên đầu danh sách
-        sortedResults = sortedResults.concat(postData1);
-
-        // Lọc và thêm các kết quả đủ từ nhưng không đúng thứ tự vào danh sách
-        postData2.forEach((result) => {
-            if (!sortedResults.includes(result)) {
-                sortedResults.push(result);
-            }
+        // Create a Fuse instance
+        const fuse = new Fuse(postData, {
+            keys: ['described'],
         });
+
+        // Perform the search
+        const sortedResults = fuse.search(keyword);
+
         const mapResult = (element) => {
             return {
-              id: element._id,
-              name: element.described,
-              image: element.image.map((elementImage) => ({
-                url: elementImage.url,
-              })),
-              video: element.video,
-              feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
-              mark_comment: (element.comment_list.length + element.mark_list.length).toString(),
-              is_felt: "0",
-              author: {
-                id: element.author.id.toString(),
-                username: element.author.username,
-                avatar: element.author.avatar,
-              },
-              described: element.described,
+                id: element.item._id,
+                name: element.item.described,
+                image: element.item.image.map((elementImage) => ({
+                    url: elementImage.url,
+                })),
+                video: element.item.video,
+                feel: (
+                    element.item.kudos_list.length +
+                    element.item.disappointed_list.length
+                ).toString(),
+                mark_comment: (
+                    element.item.comment_list.length +
+                    element.item.mark_list.length
+                ).toString(),
+                is_felt: '0',
+                author: {
+                    //id: typeof element.item.author.id === 'string' ? element.item.author.id : element.item.author.id.toString(),
+                    id: element.item.author.id.toString('hex'),
+                    username: element.item.author.username,
+                    avatar: element.item.author.avatar,
+                },
+                described: element.item.described,
             };
-          };
+        };
 
-        // Trả về kết quả đã được sắp xếp
+        // Return the sorted results
         res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
@@ -1041,8 +919,144 @@ const search = async (req, res) => {
             });
         }
     }
-}; */
+};
 
+/* const search = async (req, res) => {
+    var { keyword, index, count, user_id } = req.query;
+    const { _id } = req.userDataPass;
+
+    if (!user_id) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+            message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+        });
+    }
+
+    try {
+        index = index ? index : 0;
+        count = count ? count : 20;
+
+        if (
+            !keyword ||
+            _id.toString() !== user_id ||
+            isNaN(index) ||
+            isNaN(count) ||
+            !index ||
+            !count
+        ) {
+            throw Error('params');
+        }
+
+        // Tìm kiếm các kết quả đủ từ và đúng thứ tự bằng Fuse
+        var postData1 = await Post.find({
+            described: new RegExp(keyword, 'i'),
+        });
+
+        // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự bằng Fuse
+        var postData2 = await Post.find({
+            $or: [
+                { keyword: new RegExp(keyword, 'i') },
+                { keyword: new RegExp(keyword.replace(' ', '|'), 'i') },
+            ],
+        }).populate({
+            path: 'author',
+            select: 'username avatar',
+        });
+
+        // Combine the search results into a single array
+        const postData = postData1.concat(postData2);
+
+        // Create a Fuse instance
+        const fuse = new Fuse(postData, {
+            keys: ['described'],
+        });
+
+        // Perform the search using Fuse
+        const fuseResults = fuse.search(keyword);
+
+        // Filter the results further using Regex
+        const regexResults = fuseResults.filter(result => {
+            const regex = new RegExp(`(?=\\b${keyword.split(' ').join('\\b)(?=.*\\b')}\\b)`, 'i');
+            return regex.test(result.item.described);
+        });
+
+        const mapResult = (element) => {
+            return {
+                id: element.item._id,
+                name: element.item.described,
+                image: element.item.image.map((elementImage) => ({
+                    url: elementImage.url,
+                })),
+                video: element.item.video,
+                feel: (
+                    element.item.kudos_list.length +
+                    element.item.disappointed_list.length
+                ).toString(),
+                mark_comment: (
+                    element.item.comment_list.length +
+                    element.item.mark_list.length
+                ).toString(),
+                is_felt: '0',
+                author: {
+                    id: element.item.author.id.toString('hex'),
+                    username: element.item.author.username,
+                    avatar: element.item.author.avatar,
+                },
+                described: element.item.described,
+            };
+        };
+
+        // Return the sorted results
+        res.status(200).json({
+            code: statusCode.OK,
+            message: statusMessage.OK,
+            data: regexResults.map(mapResult),
+        });
+
+        // Cập nhật danh sách tìm kiếm đã lưu của người dùng
+        await User.findByIdAndUpdate(
+            _id,
+            {
+                $pull: {
+                    savedSearch: {
+                        keyword: keyword,
+                    },
+                },
+            },
+            { new: true }
+        );
+
+        await User.findByIdAndUpdate(
+            _id,
+            {
+                $push: {
+                    savedSearch: {
+                        keyword: keyword,
+                        created: Date.now(),
+                    },
+                },
+            },
+            { new: true }
+        );
+    } catch (error) {
+        if (error.message == 'params') {
+            return res.status(500).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        } else if (error.message == 'nodata') {
+            return res.status(500).json({
+                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
+                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+            });
+        } else {
+            return res.status(500).json({
+                code: statusCode.UNKNOWN_ERROR,
+                message: statusMessage.UNKNOWN_ERROR,
+            });
+        }
+    }
+}; */
 const get_saved_search = async (req, res) => {
     var { token, index, count } = req.query;
     const { _id } = req.userDataPass;
@@ -1079,16 +1093,45 @@ const get_saved_search = async (req, res) => {
         index = index ? index : 0;
         count = count ? count : 20;
         var userData = req.userDataPass;
+
         if (!userData) {
             throw Error('nodata');
+        } else {
+            const uniqueKeywords = {};
+            const uniqueSavedSearch = [];
+
+            userData.savedSearch
+                .sort((a, b) => b.created - a.created)
+                .slice(Number(index), Number(index) + Number(count))
+                .forEach(({ _id, keyword, created }) => {
+                    if (!uniqueKeywords[keyword]) {
+                        uniqueKeywords[keyword] = true;
+                        uniqueSavedSearch.push({
+                            id: _id,
+                            keyword: keyword,
+                            created: created,
+                        });
+                    }
+                });
+
+            return res.status(200).json({
+                code: statusCode.OK,
+                message: statusMessage.OK,
+                data: uniqueSavedSearch,
+            });
         }
-        return res.status(200).json({
+        /* return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
             data: userData.savedSearch
                 .sort((a, b) => b.created - a.created)
-                .slice(Number(index), Number(index) + Number(count)),
-        });
+                .slice(Number(index), Number(index) + Number(count))
+                .map(({ _id, keyword, created }) => ({
+                    id: _id,
+                    keyword: keyword,
+                    created: created,
+                })),
+        }); */
     } catch (error) {
         if (error.message == 'params') {
             return res.status(200).json({
@@ -1112,31 +1155,41 @@ const get_saved_search = async (req, res) => {
 const del_saved_search = async (req, res) => {
     var { token, search_id, all } = req.query;
     const { _id } = req.userDataPass;
+    const userDataIndex = req.userDataPass.savedSearch.findIndex(
+        (i) => i.id === search_id
+    );
+
     // check params
     if (isNaN(all)) {
         all = 0;
     }
     try {
+        const userData = req.userDataPass.savedSearch.find(
+            (i) => i.id === search_id
+        );
         if (Number(all) == 1) {
             await User.findByIdAndUpdate(_id, {
                 $set: {
                     savedSearch: [],
                 },
             });
+
+            if (req.userDataPass.savedSearch.length === 0) {
+                throw Error('nodata');
+            }
+
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
             });
         } else if (Number(all) == 0 && search_id) {
-            const userData = req.userDataPass.savedSearch.find(
-                (i) => i.id === search_id
-            );
             if (!userData) {
                 return res.status(500).json({
                     code: statusCode.PARAMETER_VALUE_IS_INVALID,
                     message: statusMessage.PARAMETER_VALUE_IS_INVALID,
                 });
             }
+
             await User.findByIdAndUpdate(_id, {
                 $pull: {
                     savedSearch: {
@@ -1144,6 +1197,7 @@ const del_saved_search = async (req, res) => {
                     },
                 },
             });
+
             return res.status(200).json({
                 code: statusCode.OK,
                 message: statusMessage.OK,
@@ -1170,15 +1224,9 @@ const del_saved_search = async (req, res) => {
         }
     }
 };
-
 const getListPosts = async (req, res) => {
     try {
-        let {
-            user_id,
-            index,
-            count,
-            last_id,
-        } = req.query;
+        let { user_id, index, count, last_id } = req.query;
 
         // Parameter validation
         if (!index || !count) {
@@ -1226,7 +1274,6 @@ const getListPosts = async (req, res) => {
                     },
                 },
             });
-
         } else {
             const result = await User.findById(req.userDataPass._id).populate({
                 path: 'friends',
@@ -1245,14 +1292,16 @@ const getListPosts = async (req, res) => {
                 },
             });
 
-            resultData = [].concat(...result.friends.map(e => e.postIds));
+            resultData = [].concat(...result.friends.map((e) => e.postIds));
         }
 
-        console.log("resultData.postIds.author", resultData)
-        
+        console.log('resultData.postIds.author', resultData);
+
         var newItems = 0;
 
-        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
+        const lastIdIndex = resultData.postIds.findIndex(
+            (element) => element._id == last_id
+        );
 
         if (lastIdIndex !== -1) {
             newItems = lastIdIndex;
@@ -1260,63 +1309,65 @@ const getListPosts = async (req, res) => {
 
         // Manipulate post data
         const resultArray = resultData.postIds
-        .slice(index, index + count)
-        .map(element => {
-            // Check if the author is blocked
-            var is_blocked;
-            if (resultData.blockedIds?.includes(element._id)) {
-                is_blocked = "1";
-            } else {
-                is_blocked = "0";
-            }
+            .slice(index, index + count)
+            .map((element) => {
+                // Check if the author is blocked
+                var is_blocked;
+                if (resultData.blockedIds?.includes(element._id)) {
+                    is_blocked = '1';
+                } else {
+                    is_blocked = '0';
+                }
 
-            // Check can edit
-            const postDate = new Date(resultData.created);
-            const currentDate = Date.now();
-            const oneDayInMillis = 24 * 60 * 60 * 1000;
+                // Check can edit
+                const postDate = new Date(resultData.created);
+                const currentDate = Date.now();
+                const oneDayInMillis = 24 * 60 * 60 * 1000;
 
-            var isPostOverOneDay = false;
+                var isPostOverOneDay = false;
 
-            if (currentDate - postDate > oneDayInMillis) {
-                isPostOverOneDay = true;
-            }
+                if (currentDate - postDate > oneDayInMillis) {
+                    isPostOverOneDay = true;
+                }
 
-            var can_edit;
-            if (isPostOverOneDay === true && resultData.coins >= 4){
-                can_edit = "1";
-            } else if (isPostOverOneDay === false) {
-                can_edit = "1";
-            } else {
-                can_edit = "0";
-            }
+                var can_edit;
+                if (isPostOverOneDay === true && resultData.coins >= 4) {
+                    can_edit = '1';
+                } else if (isPostOverOneDay === false) {
+                    can_edit = '1';
+                } else {
+                    can_edit = '0';
+                }
 
-
-
-            // Construct the post object
-            return {
-                id: element._id,
-                name: element.described,
-                image: element.image.map((elementImage) => ({
-                    url: elementImage.url, 
-                })),
-                video: element.video,  
-                described: element.described,
-                created: element.created,
-                feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
-                comment_mark: (element.comment_list.length + element.mark_list.length).toString(),
-                is_felt: "0",
-                is_blocked: is_blocked,
-                can_edit: can_edit,
-                banned: "0",
-                status: element.status,
-                author: {
-                    id: element.author.id,
-                    username: element.author.username,
-                    avatar: element.author.avatar,
-                },
-            };
-        });
-
+                // Construct the post object
+                return {
+                    id: element._id,
+                    name: element.described,
+                    image: element.image.map((elementImage) => ({
+                        url: elementImage.url,
+                    })),
+                    video: element.video,
+                    described: element.described,
+                    created: element.created,
+                    feel: (
+                        element.kudos_list.length +
+                        element.disappointed_list.length
+                    ).toString(),
+                    comment_mark: (
+                        element.comment_list.length + element.mark_list.length
+                    ).toString(),
+                    is_felt: '0',
+                    is_blocked: is_blocked,
+                    can_edit: can_edit,
+                    banned: '0',
+                    status: element.status,
+                    author: {
+                        id: element.author.id,
+                        username: element.author.username,
+                        avatar: element.author.avatar,
+                    },
+                };
+            });
 
         return res.status(200).json({
             code: statusCode.OK,
@@ -1327,7 +1378,6 @@ const getListPosts = async (req, res) => {
                 last_id: resultData.postIds[0]._id,
             },
         });
-
     } catch (error) {
         if (error.message === 'params') {
             return res.status(400).json({
@@ -1351,12 +1401,7 @@ const getListPosts = async (req, res) => {
 
 const getListVideo = async (req, res) => {
     try {
-        let {
-            last_id,
-            user_id,
-            index,
-            count,
-        } = req.query;
+        let { last_id, user_id, index, count } = req.query;
 
         // Parameter validation
         if (!index || !count) {
@@ -1404,7 +1449,6 @@ const getListVideo = async (req, res) => {
                     },
                 },
             });
-
         } else {
             const result = await User.findById(req.userDataPass._id).populate({
                 path: 'friends',
@@ -1423,83 +1467,84 @@ const getListVideo = async (req, res) => {
                 },
             });
 
-            resultData = [].concat(...result.friends.map(e => e.postIds));
+            resultData = [].concat(...result.friends.map((e) => e.postIds));
         }
-        
+
         var newItems = 0;
 
-        const lastIdIndex = resultData.postIds.findIndex(element => element._id == last_id);
+        const lastIdIndex = resultData.postIds.findIndex(
+            (element) => element._id == last_id
+        );
 
         if (lastIdIndex !== -1) {
             newItems = lastIdIndex;
         }
 
-
         // Manipulate post data
         const resultArray = resultData.postIds
-        .slice(index, index + count)
-        .filter(element => {
-            return element.video != "{}"
-        })
-        .map(element => {
-            // Check if the author is blocked
-            var is_blocked;
-            if (resultData.blockedIds?.includes(element._id)) {
-                is_blocked = "1";
-            } else {
-                is_blocked = "0";
-            }
+            .slice(index, index + count)
+            .filter((element) => {
+                return element.video != '{}';
+            })
+            .map((element) => {
+                // Check if the author is blocked
+                var is_blocked;
+                if (resultData.blockedIds?.includes(element._id)) {
+                    is_blocked = '1';
+                } else {
+                    is_blocked = '0';
+                }
 
-            // Check can edit
-            const postDate = new Date(resultData.created);
-            const currentDate = Date.now();
-            const oneDayInMillis = 24 * 60 * 60 * 1000;
+                // Check can edit
+                const postDate = new Date(resultData.created);
+                const currentDate = Date.now();
+                const oneDayInMillis = 24 * 60 * 60 * 1000;
 
-            var isPostOverOneDay = false;
+                var isPostOverOneDay = false;
 
-            if (currentDate - postDate > oneDayInMillis) {
-                isPostOverOneDay = true;
-            }
+                if (currentDate - postDate > oneDayInMillis) {
+                    isPostOverOneDay = true;
+                }
 
-            var can_edit;
-            if (isPostOverOneDay === true && resultData.coins >= 4){
-                can_edit = "1";
-            } else if (isPostOverOneDay === false) {
-                can_edit = "1";
-            } else {
-                can_edit = "0";
-            }
-            //if (element.video == "{}") {return;}
-            
+                var can_edit;
+                if (isPostOverOneDay === true && resultData.coins >= 4) {
+                    can_edit = '1';
+                } else if (isPostOverOneDay === false) {
+                    can_edit = '1';
+                } else {
+                    can_edit = '0';
+                }
+                //if (element.video == "{}") {return;}
 
-
-            // Construct the post object
-            return {
-                id: element._id,
-                name: element.described,
-                image: element.image.map((elementImage) => ({
-                    url: elementImage.url, 
-                })),
-                video: element.video,  
-                described: element.described,
-                created: element.created,
-                feel: (element.kudos_list.length + element.disappointed_list.length).toString(),
-                comment_mark: (element.comment_list.length + element.mark_list.length).toString(),
-                is_felt: "0",
-                is_blocked: is_blocked,
-                can_edit: can_edit,
-                banned: "0",
-                status: element.status,
-                author: {
-                    id: element.author.id,
-                    username: element.author.username,
-                    avatar: element.author.avatar,
-                },
-            };
-        })
-        ;
-
-
+                // Construct the post object
+                return {
+                    id: element._id,
+                    name: element.described,
+                    image: element.image.map((elementImage) => ({
+                        url: elementImage.url,
+                    })),
+                    video: element.video,
+                    described: element.described,
+                    created: element.created,
+                    feel: (
+                        element.kudos_list.length +
+                        element.disappointed_list.length
+                    ).toString(),
+                    comment_mark: (
+                        element.comment_list.length + element.mark_list.length
+                    ).toString(),
+                    is_felt: '0',
+                    is_blocked: is_blocked,
+                    can_edit: can_edit,
+                    banned: '0',
+                    status: element.status,
+                    author: {
+                        id: element.author.id,
+                        username: element.author.username,
+                        avatar: element.author.avatar,
+                    },
+                };
+            });
         return res.status(200).json({
             code: statusCode.OK,
             message: statusMessage.OK,
@@ -1509,7 +1554,6 @@ const getListVideo = async (req, res) => {
                 last_id: resultData.postIds[0]._id,
             },
         });
-
     } catch (error) {
         if (error.message === 'params') {
             return res.status(400).json({
@@ -1530,7 +1574,6 @@ const getListVideo = async (req, res) => {
         }
     }
 };
-
 
 module.exports = {
     addPost,
