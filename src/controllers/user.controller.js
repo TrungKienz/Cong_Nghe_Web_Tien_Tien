@@ -430,9 +430,11 @@ const check_new_version = async (req, res) => {
     const { token, last_update } = req.query;
     const { _id, active } = req.userDataPass;
     try {
-        if (!last_update) {
+        if (!last_update || active == 0) {
             throw new Error('params');
         }
+
+        
         var versionData = await Version.find({}).sort({ created: 1 });
         var userData = await User.findById(_id)
             .populate({

@@ -947,12 +947,12 @@ const search = async (req, res) => {
             throw Error('params');
         }
 
-        // Tìm kiếm các kết quả đủ từ và đúng thứ tự bằng Fuse
+        // Tìm kiếm các kết quả đủ từ và đúng thứ tự bằng regex
         var postData1 = await Post.find({
             described: new RegExp(keyword, 'i'),
         });
 
-        // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự bằng Fuse
+        // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự bằng regex
         var postData2 = await Post.find({
             $or: [
                 { keyword: new RegExp(keyword, 'i') },
