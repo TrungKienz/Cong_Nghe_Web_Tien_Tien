@@ -310,7 +310,7 @@ const getPost = async (req, res) => {
             })) : []),
             video: isBlocked ? null : (post.video ? {
                 url: post.video.url,
-                thumb: post.video.thumb || null,
+                thumb: post.video.thumb,
             } : {}),
             author: isBlocked ? null : {
                 id: author._id,
@@ -339,8 +339,8 @@ const getPost = async (req, res) => {
         const currentDate = Date.now();
         const oneDayInMillis = 24 * 60 * 60 * 1000;
         const isPostOverOneDay = (currentDate - postDate) > oneDayInMillis;
-
-        if (!isPostOverOneDay && author.coins < 4 && _id == post.author._id) {
+        
+        if (!isPostOverOneDay && author.coins > 4 && _id.toString() == post.author._id.toString()) {
             responseData.can_edit = "1";
         }
 
@@ -365,24 +365,65 @@ const editPost = async (req, res) => {
     const { id, described, status, state, image_del, image_sort, auto_accept } =
         req.query;
     const { _id } = req.userDataPass;
+    const images = req.files && req.files['image'];
+    const video = req.files && req.files['video'];
 
     try {
-        console.log(image_del, image_del.length, typeof image_del);
-        if (
-            !id ||
-            (described && described.length > 500) ||
-            (image_del &&
-                typeof image_del == 'object' &&
-                image_del.length > 4) ||
-            (image_sort && image_sort.length > 4)
-        ) {
-            throw Error('params');
+        var countImageDel = 0;
+
+        const postData = await Post.findById(id);
+        if (image_sort && (image_sort < 0 || image_sort > postData.image.length)) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
         }
+        postData.image?.map((image) => {
+            if(image_del.includes(image._id)){
+                countImageDel++;
+            }
+        })
+
+        if (!postData) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
+        }
+        
+        // Kiểm tra xem đã quá 4 ảnh hay chưa
+        if (images != null && postData.image.length == 4 && postData.image.length > countImageDel) {
+            return res.status(200).json({
+                code: statusCode.MAXIMUM_NUMBER_OF_IMAGES,
+                message: statusMessage.MAXIMUM_NUMBER_OF_IMAGES, 
+            })
+        }
+        if (image_del != null && postData.image.length == 0) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+            })
+        }
+
+        // Kiểm tra bài post có video hay ảnh
+        if (postData.image.length != 0 && video != null) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+            })
+        } else if (postData.video != null && images != null) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+            })
+        } else if (postData.video != null && video != null) {
+            return res.status(200).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+            })
+        }
+
         try {
-            const images = req.files['image'];
-            const video = req.files['video'];
-            var updateData = {};
-            const postData = await Post.findOne({ _id: id });
             const postDate = new Date(postData.created);
             const currentDate = Date.now();
 
@@ -398,10 +439,17 @@ const editPost = async (req, res) => {
             const authorData = await User.findOne({ _id: postData.author });
             const currentCoin = authorData.coins;
 
-            if (isPostOverOneDay == true && currentCoin < 4) {
+            if (currentCoin < 4) {
                 return res.status(200).json({
-                    code: statusCode.OK,
-                    message: 'Not enough coin',
+                    code: statusCode.NOT_ENOUGHT_COINS,
+                    message: statusMessage.NOT_ENOUGHT_COINS,
+                }); 
+            }
+
+            if (isPostOverOneDay == true) {
+                return res.status(200).json({
+                    code: statusCode.NOT_ACCESS,
+                    message: statusMessage.NOT_ACCESS,
                 });
             }
 
@@ -436,50 +484,39 @@ const editPost = async (req, res) => {
             }
             if (video) {
                 cloudHelper
-                    .upload(video[0])
-                    .then(async (result2) => {
-                        updateData.video = result2;
+                    .upload(video[0], 'video')
+                    .then(async (resultVideo) => {
+                        postData.video = resultVideo;
                         await postData.save();
                     })
                     .catch((err) => {
-                        throw err;
+                        // throw err;
+                        console.log(err)
                     });
             } else if (images) {
                 Promise.all(
-                    images.map((element) => {
-                        return cloudHelper.upload(element);
+                    images.map((image) => {
+                        return cloudHelper.upload(image);
                     })
-                ).then(async (result2) => {
+                ).then(async (resultImage) => {
                     postData.image =
                         postData.image && postData.length == 0
-                            ? result2
-                            : postData.image.concat(result2);
+                            ? resultImage
+                            : postData.image.concat(resultImage);
                     await postData.save();
                 });
             } else {
                 await postData.save();
             }
             if (isPostOverOneDay == true) {
-                // authorData.coins = currentCoin - 4;
-                // authorData.save();
-                // return res.status(200).json({
-                //     code: statusCode.OK,
-                //     message: statusMessage.OK,
-                //     coins: currentCoin - 4,
-                // });
                 return res.status(200).json({
                     code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                    message: 'Can not edit this post',
+                    message: statusMessage.PARAMETER_VALUE_IS_INVALID,
                 });
             } else {
-                // return res.status(200).json({
-                //     code: statusCode.OK,
-                //     message: statusMessage.OK,
-                //     coins: currentCoin,
-                // });
                 authorData.coins = currentCoin - 4;
                 authorData.save();
-                return res.status(200).json({
+                return res.status(200).json({ 
                     code: statusCode.OK,
                     message: statusMessage.OK,
                     coins: (currentCoin - 4).toString(),
@@ -493,22 +530,10 @@ const editPost = async (req, res) => {
         }
     } catch (error) {
         console.log(error);
-        if (error.message == 'params') {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-            });
-        } else if (error.message == 'FILE_SIZE_IS_TOO_BIG') {
-            return res.status(200).json({
-                code: statusCode.FILE_SIZE_IS_TOO_BIG,
-                message: statusMessage.FILE_SIZE_IS_TOO_BIG,
-            });
-        } else {
-            return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR,
-            });
-        }
+        return res.status(200).json({
+            code: statusCode.UNKNOWN_ERROR,
+            message: statusMessage.UNKNOWN_ERROR,
+        });
     }
 };
 
@@ -544,9 +569,6 @@ const deletePost = async (req, res) => {
         }
         return res.status(200).json({
             code: statusCode.OK,
-            // message: {
-            //     coins: currentCoin,
-            // },
             message: statusMessage.OK,
             coins: (currentCoin - 4).toString(),
         });
