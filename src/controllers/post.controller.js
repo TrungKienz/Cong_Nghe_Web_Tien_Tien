@@ -224,31 +224,30 @@ const removeAscent = (str) => {
 };
 
 const getPost = async (req, res) => {
+    // Destructuring variables from request
+    const { id } = req.query;
+    const { _id } = req.userDataPass;
+    // Parameter validation
+    if (!id) {
+        return res.status(400).json({
+            code: statusCode.PARAMETER_IS_NOT_ENOUGH,
+            message: statusMessage.PARAMETER_IS_NOT_ENOUGH,
+        });
+    }
+    // Input Validation
+    if (!_id) {
+        console.log("Invalid user ID");
+        return res.status(400).json({
+            code: statusCode.INVALID_USER_ID,
+            message: statusMessage.INVALID_USER_ID,
+        });
+    }
     try {
-        const { token, id } = req.query;
-        const { _id } = req.userDataPass;
-
-        // Input Validation
-        if (!_id) {
-            console.log("Invalid user ID");
-            return res.status(400).json({
-                code: statusCode.INVALID_USER_ID,
-                message: statusMessage.INVALID_USER_ID,
-            });
-        }
-
-        if (!id) {
-            return res.status(400).json({
-                code: statusCode.PARAMETER_IS_NOT_ENOUGH,
-                message: statusMessage.PARAMETER_IS_NOT_ENOUGH,
-            });
-        }
-
         // Database Query
         const post = await Post.findOne({ _id: id })
             .populate({
                 path: 'author',
-                select: '_id username avatar coins blockedIds',
+                select: '_id username avatar coins blockedIds postIds',
             })
             .populate({
                 path: 'like_list',
@@ -266,109 +265,85 @@ const getPost = async (req, res) => {
                 select: 'type'
             });
 
-        console.log("POST: ", post)
         // Post Validation
         if (!post || post.is_blocked) {
-            throw new Error('POST_IS_NOT_EXISTED');
-        }
-
-        const author = await User.findOne({ _id: post.author?._id });
-        const userData = await User.findById(_id);
-
-        var canMark;
-        if (userData.mark_list.includes(id)){
-            canMark = "0";
-        }
-
-        var isMarked;
-        if (userData.mark_list.includes(id)) {
-            isMarked = "0";
-        }
-
-        var canRate;
-        if (userData.mark_list.includes(id)) {
-            canRate = "-5";
+            return res.status(404).json({
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+            });
         }
 
         // Response Handling
-        var responseData = {
-            id: post._id,
-            name: post.name || post.described,
-            created: post.created,
-            described: post.described,
-            modified: post.modified,
-            fake: "0",
-            trust: "0",
-            kudos: post.kudos_list.length.toString(),
-            disappointed: post.disappointed_list.length.toString(),
-            is_rated: "0",
-            is_marked: isMarked || "1",
-            image: [],
-            video: {},
-            author: {
+        const author = await User.findOne({ _id: post.author?._id });
+        const userData = await User.findById(_id);
+
+        // Check if the post is marked by the user
+        const isMarked = userData.mark_list.includes(id) ? "0" : "1";
+
+        // Check if the user can mark the post
+        const canMark = isMarked === "0" ? "0" : "1";
+
+        // Check if the user can rate the post
+        const canRate = isMarked === "0" ? "-5" : "1";
+        
+        var isBlocked = false;
+        // User Blocking Check
+        if (userData.blockedIds.includes(author._id)) {
+            isBlocked = true;
+        }
+        var postUrl = (process.env.APP_URL || "http://localhost:3000/it4788") + "/post/" + post._id;
+        const responseData = {
+            id: isBlocked ? null : post._id,
+            name: isBlocked ? null : (post.name || post.described),
+            created: isBlocked ? null : post.created,
+            described: isBlocked ? null : post.described,
+            modified: isBlocked ? null : post.modified,
+            fake: isBlocked ? null : "0",
+            trust: isBlocked ? null : "0",
+            kudos: isBlocked ? null : post.kudos_list.length.toString(),
+            disappointed: isBlocked ? null : post.disappointed_list.length.toString(),
+            is_rated: isBlocked ? null : "0",
+            is_marked: isBlocked ? null : isMarked,
+            image: isBlocked ? null : (post.image ? post.image.map((image) => ({
+                id: image._id,
+                url: image.url,
+            })) : []),
+            video: isBlocked ? null : (post.video ? {
+                url: post.video.url,
+                thumb: post.video.thumb || null,
+            } : {}),
+            author: isBlocked ? null : {
                 id: author._id,
                 name: author.username,
                 avatar: author.avatar,
-                coins: (author.coins).toString(),
+                coins: author.coins.toString(),
                 listing: author.postIds.map((postId) => ({ postId })),
             },
-            category: {
+            category: isBlocked ? null : {
                 id: post._id,
                 name: post.described,
                 has_name: "0",
             },
-            state: post.state || "public",
-            is_blocked: "0",
-            can_edit: "0",
-            banned: post.banned || "0",
-            can_mark: canMark || "1",
-            can_rate: canRate || "1",
-            url: "",
-            messages: canMark == -5 ? "Khong duoc mark":
-                    canRate == -5 ? "Khong duoc rate" : "",
+            state: isBlocked ? null : post.state || "public",
+            is_blocked: isBlocked ? "1" : "0",
+            can_edit: isBlocked ? null : "0",
+            banned: isBlocked ? null : post.banned || "0",
+            can_mark: isBlocked ? null : canMark,
+            can_rate: isBlocked ? null : canRate,
+            url: isBlocked ? null : postUrl.toString(),
+            messages: isBlocked ? null : (canMark === "-5" ? "Không được mark" : canRate === "-5" ? "Không được rate" : ""),
         };
 
-        console.log(post.image)
-
-        if (post.image && post.image.length > 0) {
-            responseData.image = post.image.map((image) => ({
-                id: image._id,
-                url: image.url,
-            }));
-        } else if (post.video) {
-            responseData.video = {
-                // id: post.video._id,
-                url: post.video.url,
-                thumb: post.video.thumb || null,
-            };
-        }
-        // Check can edit
+        // Check if the user can edit the post
         const postDate = new Date(post.created);
         const currentDate = Date.now();
         const oneDayInMillis = 24 * 60 * 60 * 1000;
+        const isPostOverOneDay = (currentDate - postDate) > oneDayInMillis;
 
-        var isPostOverOneDay = false;
-
-        if (currentDate - postDate > oneDayInMillis) {
-            isPostOverOneDay = true;
-        }
-
-        if (isPostOverOneDay === true && post.author.coins >= 4) {
-            responseData.can_edit = "1";
-        } else if (isPostOverOneDay === false) {
+        if (!isPostOverOneDay && author.coins < 4 && _id == post.author._id) {
             responseData.can_edit = "1";
         }
 
-        // User Blocking Check
-        if (author.blockedIds?.includes(_id)) {
-            return res.status(200).json({
-                code: statusCode.OK,
-                message: statusMessage.OK,
-                data: {
-                    isBlocked: true,
-                },
-            });
-        }
 
         return res.status(200).json({
             code: statusCode.OK,
@@ -377,20 +352,14 @@ const getPost = async (req, res) => {
         });
 
     } catch (error) {
-        if (error.message === 'POST_IS_NOT_EXISTED') {
-            return res.status(404).json({
-                code: statusCode.POST_NOT_FOUND,
-                message: statusMessage.POST_NOT_FOUND,
-            });
-        } else {
-            console.error(error);
-            return res.status(500).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR,
-            });
-        }
+        console.error(error);
+        return res.status(500).json({
+            code: statusCode.PARAMETER_VALUE_IS_INVALID,
+            message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+        });
     }
 };
+
 
 
 const editPost = async (req, res) => {
