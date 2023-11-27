@@ -789,7 +789,9 @@ const like = async (req, res) => {
     }
 };
 
-const search = async (req, res) => {
+
+//version 2
+ const search = async (req, res) => {
     var { keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
 
@@ -815,32 +817,27 @@ const search = async (req, res) => {
             throw Error('params');
         }
 
-        // Tìm kiếm các kết quả đủ từ và đúng thứ tự
-        var postData1 = await Post.find({
-            described: new RegExp(keyword, 'i'),
-        });
-
-        // Tìm kiếm các kết quả đủ từ nhưng không đúng thứ tự
-        var postData2 = await Post.find({
-            $or: [
-                { keyword: new RegExp(keyword, 'i') },
-                { keyword: new RegExp(keyword.replace(' ', '|'), 'i') },
-            ],
-        }).populate({
-            path: 'author',
+        // Combine the search results into a single array
+        const postData = await Post.find({}).populate({
+            path:'author',
             select: 'username avatar',
         });
 
-        // Combine the search results into a single array
-        const postData = postData1.concat(postData2);
-
         // Create a Fuse instance
         const fuse = new Fuse(postData, {
+            includeScore: true,
+            useExtendedSearch: true,
             keys: ['described'],
         });
-
+        
         // Perform the search
-        const sortedResults = fuse.search(keyword);
+        const sortedResults = [];
+        
+        
+        keyword.split(" ").forEach((kw) => {
+            const searchResults = fuse.search(kw);
+            sortedResults.push(...searchResults);
+        });
 
         const mapResult = (element) => {
             return {
@@ -919,8 +916,8 @@ const search = async (req, res) => {
             });
         }
     }
-};
-
+}; 
+// version 1
 /* const search = async (req, res) => {
     var { keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
