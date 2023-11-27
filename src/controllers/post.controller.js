@@ -5,6 +5,8 @@ const Fuse = require('fuse.js');
 const Post = require('../models/post.model.js');
 const User = require('../models/user.model.js');
 const ReportPost = require('../models/report.post.model.js');
+const Comment = require('../models/comment.model');
+const Mark = require('../models/mark.model.js');
 
 const Notification = require('../models/notification.model');
 const formidableHelper = require('../helpers/formidable.helper');
@@ -545,10 +547,13 @@ const deletePost = async (req, res) => {
         var currentCoin = authorData.coins;
         if (currentCoin < 4) {
             return res.status(200).json({
-                code: statusCode.OK,
-                message: 'Not enough coin',
+                code: statusCode.NOT_ENOUGHT_COINS,
+                message: statusMessage.NOT_ENOUGHT_COINS,
             });
         }
+
+        const postData = await Post.findById(id);
+
         var result = await Post.findOneAndDelete({
             _id: id,
             author: _id,
@@ -562,10 +567,37 @@ const deletePost = async (req, res) => {
                 },
             }
         );
+        
+        if (postData.mark_list) {
+            await Promise.all(
+                postData.mark_list.map(async (markId) => {
+                    // Delete mark if exist
+                    await Mark.findOneAndDelete({ _id: markId });
+                }));
+        }  
+        if (postData.comment_list) {
+            await Promise.all(
+                postData.comment_list.map(async (commentId) => {
+                    // Delete comment if exist
+                    await Comment.findOneAndDelete({ _id: commentId });
+                }));
+        } 
+        if (postData.marker_list) {
+            await Promise.all(
+                postData.marker_list.map(async (markerId) => {
+                    // Await inside the map function
+                    await User.findOneAndUpdate(
+                    { _id: markerId },
+                    { $inc: { coins: 4 } }
+                    );
+                }));
+        }
 
         if (!result) {
-            console.log('Khong tim thay bai viet');
-            throw Error('Post is not existed');
+            return res.status(200).json({
+                code: statusCode.POST_IS_NOT_EXISTED,
+                message: statusMessage.POST_IS_NOT_EXISTED,
+            });
         }
         return res.status(200).json({
             code: statusCode.OK,
@@ -573,17 +605,10 @@ const deletePost = async (req, res) => {
             coins: (currentCoin - 4).toString(),
         });
     } catch (error) {
-        if (error.message == 'Post is not existed') {
-            return res.status(200).json({
-                code: statusCode.POST_IS_NOT_EXISTED,
-                message: statusMessage.POST_IS_NOT_EXISTED,
-            });
-        } else {
-            return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR,
-            });
-        }
+        return res.status(200).json({
+            code: statusCode.UNKNOWN_ERROR,
+            message: statusMessage.UNKNOWN_ERROR,
+        });
     }
 };
 

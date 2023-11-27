@@ -201,6 +201,7 @@ const setMarkComment = async (req, res) => {
             var currentCoin = userData.coins;
             // Add the new mark to the post's mark_list
             post.mark_list.push(newMark._id);
+            post.marker_list.push(_id);
             await post.save();
             userData.mark_list.push(id);
             userData.coins = currentCoin - 4;

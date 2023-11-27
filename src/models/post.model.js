@@ -26,6 +26,12 @@ const postSchema = new mongoose.Schema({
             ref: 'mark',
         },
     ],
+    marker_list: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'user',
+        },
+    ],
     is_liked: Boolean,
     like_list: [
         {
