@@ -706,8 +706,8 @@ const feel = async (req, res) => {
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    disappointed: type == 0 ? '1' : '0',
-                    kudos: type == 1 ? '1' : '0',
+                    disappointed: postDataPre.disappointed_list.length.toString(),
+                    kudos: postDataPre.kudos_list.length.toString(),
                 },
             });
         } else {
@@ -838,7 +838,7 @@ const like = async (req, res) => {
 
 
 //version 2
- const search = async (req, res) => {
+const search = async (req, res) => {
     var { keyword, index, count, user_id } = req.query;
     const { _id } = req.userDataPass;
 
