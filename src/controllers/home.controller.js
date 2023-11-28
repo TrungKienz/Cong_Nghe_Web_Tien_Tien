@@ -136,7 +136,7 @@ const getNotification = async (req, res) => {
                 .sort((a, b) => b.created - a.created)
                 .slice(Number(index), Number(index) + Number(count)),
             last_update: userData.notifications.last_update || Date(Date.now()),
-            badge: countNewNoti,
+            badge: countNewNoti.toString(),
         });
     } catch (error) {
         console.log(error);

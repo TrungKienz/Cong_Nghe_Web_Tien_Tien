@@ -826,6 +826,7 @@ function shuffle(array) {
 
     return array;
 }
+
 function changeTimeZone(date, timeZone) {
     // returns a Date() object
     if (typeof date === 'string') {
