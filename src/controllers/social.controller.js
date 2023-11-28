@@ -261,9 +261,9 @@ const getListOfFriendSuggestions = async (req, res) => {
                 //Exclude the user's id
                 delete user._id;
                 const _formatted = {
-                    user_id: user.user_id,
-                    username: user.username,
-                    avatar: user.avatar,
+                    user_id: user.user_id ? user.user_id : "",
+                    username: user.username ? user.username : "",
+                    avatar: user.avatar ? user.avatar : "",
                     same_friends: user.same_friends.toString()
                 }
                 blockedList.forEach(element => {
