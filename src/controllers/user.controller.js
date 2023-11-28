@@ -167,7 +167,7 @@ const change_password = async (req, res) => {
             new_password.match(/[^a-z|A-Z|0-9]/g)
         )
             throw Error('PARAMETER_VALUE_IS_INVALID');
-
+        if (!password || !new_password) throw Error('PARAMETER_IS_NOT_ENOUGHT');
         if (password == new_password) throw Error('PARAMETER_VALUE_IS_INVALID');
 
         let count = 0;
@@ -201,11 +201,17 @@ const change_password = async (req, res) => {
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message: statusMessage.PARAMETER_VALUE_IS_INVALID,
             });
+        else if (error.message == 'PARAMETER_IS_NOT_ENOUGHT')
+        return res.status(200).json({
+            code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+            message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+        });
         else
-            return res.status(200).json({
+        {return res.status(200).json({
                 code: statusCode.UNKNOWN_ERROR,
                 message: statusMessage.UNKNOWN_ERROR,
-            });
+            });}
+            
     }
 };
 
@@ -338,6 +344,16 @@ const set_block = async (req, res) => {
         if (user_id == _id || (type != 0 && type != 1)) {
             console.log('trùng user_id hoặc type không đúng');
             throw new Error('params');
+        }
+
+        if (!(user_id !== undefined)) {
+            // Check if params are provided
+            console.log("Missing user_id or is_accept")
+            throw {
+                code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+                message:
+                    statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+            };
         }
         // Tìm user bị block
         var friendData = await User.findById(user_id);
