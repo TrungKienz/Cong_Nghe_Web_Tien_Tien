@@ -543,7 +543,18 @@ const deletePost = async (req, res) => {
     const { id } = req.query;
     const { _id } = req.userDataPass;
     try {
+        const postData = await Post.findById(id);
+
+        // Check is author of post
+        if (postData.author.toString() != _id.toString()){
+            return res.status(200).json({
+                code: statusCode.NOT_ACCESS,
+                message: statusMessage.NOT_ACCESS,
+            })
+        };
+
         const authorData = await User.findOne({ _id: _id });
+        // Check if not enough coin
         var currentCoin = authorData.coins;
         if (currentCoin < 4) {
             return res.status(200).json({
@@ -551,8 +562,8 @@ const deletePost = async (req, res) => {
                 message: statusMessage.NOT_ENOUGHT_COINS,
             });
         }
-
-        const postData = await Post.findById(id);
+        authorData.coins = currentCoin - 4;
+        authorData.save();
 
         var result = await Post.findOneAndDelete({
             _id: id,

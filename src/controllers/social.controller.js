@@ -30,6 +30,7 @@ const addFriend = async (req, res) => {
             };
         }
         let totalRequestsSent = -1;
+        let targetDataUpdated = false;
 
         //#endregion
 
@@ -129,11 +130,12 @@ const addFriend = async (req, res) => {
                 //console.log(!check_array_contains(newArr, _requestInfo))
                 targetData.requestedFriends.push(_requestInfo); // Save sent friend request
             }
+            targetDataUpdated = true
         });
         //targetData.requestedFriends.push(_id) // Save received friend request
         //targetData.requestedFriends.pop()
         //#endregion
-        while (totalRequestsSent == -1) {
+        while (totalRequestsSent == -1 || targetDataUpdated == false) {
             console.log('Sleep');
             await sleep(500);
         }
