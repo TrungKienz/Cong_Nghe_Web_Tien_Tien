@@ -380,9 +380,9 @@ const getListOfFriendRequests = async (req, res) => {
             delete _userInfo.blockedIds;
             
             const _formatted = {
-                id: _userInfo.id,
-                username: _userInfo.username,
-                avatar: _userInfo.avatar,
+                id: _userInfo.id ? _userInfo.id : "",
+                username: _userInfo.username ? _userInfo.username : "",
+                avatar: _userInfo.avatar ? _userInfo.avatar : "",
                 same_friends: _userInfo.same_friends.toString(),
                 created: _userInfo.created
             }
