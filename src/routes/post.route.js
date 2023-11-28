@@ -12,7 +12,7 @@ router.post('/get_post', isAuth, postController.getPost);
 router.post('/edit_post', isAuth, postController.editPost);
 router.post('/delete_post', isAuth, postController.deletePost);
 router.post('/report_post', isAuth, isValidate, postController.reportPost);
-router.post('/feel', isAuth, postController.feel);
+router.post('/feel', isAuth, isValidate, postController.feel);
 router.post('/search', isAuth, postController.search);
 router.post('/get_saved_search', isAuth, postController.get_saved_search);
 router.post('/del_saved_search', isAuth, postController.del_saved_search);
