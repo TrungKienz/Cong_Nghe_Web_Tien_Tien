@@ -408,22 +408,22 @@ const editPost = async (req, res) => {
         }
 
         // Kiểm tra bài post có video hay ảnh
-        if (postData.image.length != 0 && video != null) {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
-            })
-        } else if (postData.video != null && images != null) {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
-            })
-        } else if (postData.video != null && video != null) {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
-            })
-        }
+        // if (postData.image.length != 0 && video != null) {
+        //     return res.status(200).json({
+        //         code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        //         message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+        //     })
+        // } else if (postData.video != null && images != null) {
+        //     return res.status(200).json({
+        //         code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        //         message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+        //     })
+        // } else if (postData.video != null && video != null) {
+        //     return res.status(200).json({
+        //         code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        //         message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+        //     })
+        // }
 
         try {
             const postDate = new Date(postData.created);
