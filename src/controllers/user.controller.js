@@ -358,23 +358,27 @@ const set_block = async (req, res) => {
                     blockedIds: user_id,
                 },
                 $pull: {
-                    friends: user_id,
+                    friends: {
+                        _id: user_id
+                    },
                     sendRequestedFriends: {
-                        receiver: user_id,
+                        _id: user_id,
                     },
                     requestedFriends: {
-                        author: user_id,
+                        _id: user_id,
                     },
                 },
             });
             await User.findByIdAndUpdate(user_id, {
                 $pull: {
-                    friends: _id,
+                    friends: {
+                        _id: _id
+                    },
                     sendRequestedFriends: {
-                        receiver: _id,
+                        _id: _id,
                     },
                     requestedFriends: {
-                        author: _id,
+                        _id: _id,
                     },
                 },
             });
