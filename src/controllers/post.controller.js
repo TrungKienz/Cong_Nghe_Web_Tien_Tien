@@ -374,12 +374,12 @@ const editPost = async (req, res) => {
         var countImageDel = 0;
 
         const postData = await Post.findById(id);
-        if (image_sort && (image_sort < 0 || image_sort > postData.image.length)) {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
-            });
-        }
+        // if (image_sort && image_sort < 0) {
+        //     return res.status(200).json({
+        //         code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        //         message: statusMessage.PARAMETER_VALUE_IS_INVALID,
+        //     });
+        // }
         postData.image?.map((image) => {
             if(image_del.includes(image._id)){
                 countImageDel++;
