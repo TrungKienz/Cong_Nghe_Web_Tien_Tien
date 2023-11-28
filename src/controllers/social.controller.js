@@ -31,6 +31,7 @@ const addFriend = async (req, res) => {
         }
         let totalRequestsSent = -1;
         let targetDataUpdated = false;
+        let userDataUpdated = false
 
         //#endregion
 
@@ -71,7 +72,6 @@ const addFriend = async (req, res) => {
         });
 
 
-        //Check if friend request already exists
         await User.findOne({ _id: _id }).exec(async (err, user) => {
             let newArr = [];
             let arr = user.sendRequestedFriends.toObject();
@@ -79,6 +79,8 @@ const addFriend = async (req, res) => {
                 newArr.push(request._id.toString());
             });
             totalRequestsSent = newArr.length;
+
+            //Check if friend request already exists
             if (!check_array_contains(newArr, user_id)) {
                 const _requestInfo = {
                     _id: user_id,
@@ -86,7 +88,19 @@ const addFriend = async (req, res) => {
                 };
                 totalRequestsSent += 1;
                 ownerData.sendRequestedFriends.push(_requestInfo); // Save sent friend request
+            }else
+            {
+                console.log("fr exists!")
+                await User.findByIdAndUpdate(_id, {
+                    $pull: {
+                        sendRequestedFriends: {
+                            _id: user_id
+                        }
+                    },
+                });
+                totalRequestsSent -= 1;
             }
+            userDataUpdated = true
         });
 
         //#endregion
@@ -121,6 +135,8 @@ const addFriend = async (req, res) => {
             arr.forEach((request) => {
                 newArr.push(request._id.toString());
             });
+
+            //Check if target already have the request
             if (!check_array_contains(newArr, _id.toString())) {
                 const _requestInfo = {
                     _id: _id.toString(),
@@ -129,13 +145,23 @@ const addFriend = async (req, res) => {
 
                 //console.log(!check_array_contains(newArr, _requestInfo))
                 targetData.requestedFriends.push(_requestInfo); // Save sent friend request
+            }else
+            {
+                console.log("already exiests 2")
+                await User.findByIdAndUpdate(user_id, {
+                    $pull: {
+                        requestedFriends: {
+                            _id: _id 
+                        }
+                    },
+                });
             }
             targetDataUpdated = true
         });
         //targetData.requestedFriends.push(_id) // Save received friend request
         //targetData.requestedFriends.pop()
         //#endregion
-        while (totalRequestsSent == -1 || targetDataUpdated == false) {
+        while (!(userDataUpdated && targetDataUpdated )) {
             console.log('Sleep');
             await sleep(500);
         }
