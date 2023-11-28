@@ -515,11 +515,11 @@ const getListOfUserFriends = async (req, res) => {
             delete _userInfo._id;
             delete _userInfo.friends;
             const _formatted = {
-                id: _userInfo.id,
-                username: _userInfo.username,
-                avatar: _userInfo.avatar,
+                id: _userInfo.id ? _userInfo.id : "",
+                username: _userInfo.username ? _userInfo.username : "",
+                avatar: _userInfo.avatar ? _userInfo.avatar : "",
                 same_friends: _userInfo.same_friends.toString(),
-                created: _userInfo.created
+                created: _userInfo.created ? _userInfo.created : ""
             }
             blockedList.forEach(element => {
                 if (element == _userInfo.id)
@@ -763,7 +763,7 @@ const processFriendRequest = async (req, res) => {
         //#endregion
 
         //#region proceed request
-        if (is_accept) {
+        if (+is_accept) {
             //Add to friends list
             ownerData.friends.push({
                 _id: user_id,
