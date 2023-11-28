@@ -11,9 +11,16 @@ const statusCode = require('./../constants/statusCode.constant.js');
 const statusMessage = require('./../constants/statusMessage.constant.js');
 
 const getMarkComment = async (req, res) => {
+    const { id, count, index } = req.query;
+    const { _id } = req.userDataPass;
+    if (!count || !index) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+            message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+        })
+    }
+     
     try {
-        const { id, count = 20, index = 0 } = req.query;
-        const { _id } = req.userDataPass;
 
         if (!id) {
             throw new Error('params');
@@ -146,9 +153,17 @@ const getMarkComment = async (req, res) => {
 };
 
 const setMarkComment = async (req, res) => {
+    const { id, content, index, count, mark_id, type } = req.query;
+    const { _id } = req.userDataPass;
+
+    if (!id || !index || !count || !content) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+            message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+        })
+    }
+
     try {
-        const { id, content, index, count, mark_id, type } = req.query;
-        const { _id } = req.userDataPass;
 
         // Default values for index and count
         const parsedIndex = Number(index);
