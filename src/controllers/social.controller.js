@@ -19,6 +19,15 @@ const addFriend = async (req, res) => {
                 message:
                     statusMessage.PARAMETER_IS_NOT_ENOUGHT 
             };
+        }else if (!user_id.match(/^[0-9a-fA-F]{24}$/))
+        {
+            console.log("user_id's format is invalid")
+            throw {
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message:
+                    statusMessage.PARAMETER_VALUE_IS_INVALID 
+            };
+
         }
 
         if (user_id.toString() == _id.toString()) {
