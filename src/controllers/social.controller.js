@@ -713,11 +713,11 @@ const processFriendRequest = async (req, res) => {
         });
 
         if (!isFriendRequestExist) {
+            console.log("Friend request from user_id ${user_id} does not exist from user's db.")
             throw {
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ` - Friend request from user_id ${user_id} does not exist from user's db.`,
+                    statusMessage.PARAMETER_VALUE_IS_INVALID 
             };
         }
 
@@ -753,11 +753,11 @@ const processFriendRequest = async (req, res) => {
             }
         });
         if (!isFriendRequestExistOnTarget) {
+            console.log("Friend request from user_id ${user_id} does not exist from target's db")
             throw {
                 code: statusCode.PARAMETER_VALUE_IS_INVALID,
                 message:
-                    statusMessage.PARAMETER_VALUE_IS_INVALID +
-                    ` - Friend request from user_id ${user_id} does not exist from target's db.`,
+                    statusMessage.PARAMETER_VALUE_IS_INVALID 
             };
         }
         //#endregion
