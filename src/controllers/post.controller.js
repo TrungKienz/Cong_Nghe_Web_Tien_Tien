@@ -670,30 +670,111 @@ const reportPost = async (req, res) => {
 
 const feel = async (req, res) => {
     const { id, type } = req.query;
-    const _id = req.userDataPass._id;
+    const { _id, coins }= req.userDataPass;
+    if ( !type ) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_IS_NOT_ENOUGHT,
+            message:
+                statusMessage.PARAMETER_IS_NOT_ENOUGHT,
+        });
+    }
+
+    if (type != 0 && type != 1) {
+        return res.status(200).json({
+            code: statusCode.PARAMETER_VALUE_IS_INVALID,
+            message:
+                statusMessage.PARAMETER_VALUE_IS_INVALID,
+        });
+    } 
 
     try {
-        const postDataPre = await Post.findOne({ _id: id });
+        const postDataPre = await Post.findOne({ _id: id }).populate({
+            path: 'author',
+            select: '_id blockedIds'
+        });
+
+        if(!postDataPre || postDataPre.author.blockedIds.includes(_id)) {
+            return res.status(404).json({
+                code: statusCode.POST_IS_NOT_EXISTED,
+                message: statusMessage.POST_IS_NOT_EXISTED,
+            });
+        }
 
         if (
-            postDataPre.disappointed_list?.includes(_id) ||
-            postDataPre.kudos_list?.includes(_id)
+            postDataPre.disappointed_list?.includes(_id) && type == 0
         ) {
+
             return res.status(200).json({
                 code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
                 message:
                     statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
             });
-            // return res.status(200).json({
-            //     code: statusCode.OK,
-            //     message: statusMessage.OK,
-            //     data: {
-            //         disappointed: postDataPre.disappointed
-            //             ? postDataPre.disappointed
-            //             : 0,
-            //         kudos: postDataPre.kudos ? postDataPre.kudos : 0,
-            //     },
-            // });
+        } else if (
+            postDataPre.kudos_list?.includes(_id) && type == 1
+        ) {
+
+            return res.status(200).json({
+                code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                message:
+                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+            });
+        } 
+
+        if (
+            postDataPre.disappointed_list?.includes(_id) ||
+            postDataPre.kudos_list?.includes(_id)
+        ) {
+            let updateFields = {};
+            var disappointFeel;
+            var kudoFeel;
+            if (type == 0) {
+                updateFields = {
+                    $inc: { disappointed: 1 },
+                    $inc: { kudos: -1 },
+                    $pull: { kudos_list: _id },
+                    $push: { disappointed_list: _id },
+                };
+                disappointFeel = postDataPre.disappointed_list.length + 1;
+                kudoFeel = postDataPre.kudos_list.length - 1;
+            } else if (type == 1) {
+                updateFields = {
+                    $inc: { disappointed: -1 },
+                    $inc: { kudos: 1 },
+                    $push: { kudos_list: _id },
+                    $pull: { disappointed_list: _id },
+                };
+                disappointFeel = postDataPre.disappointed_list.length - 1;
+                kudoFeel = postDataPre.kudos_list.length + 1;
+            }
+
+            const postData = await Post.findOneAndUpdate({ _id: id }, updateFields);
+
+            if ( coins < 2 ) {
+                return res.status(200).json({
+                    code: statusCode.NOT_ENOUGHT_COINS,
+                    message: statusMessage.NOT_ENOUGHT_COINS,
+                }) 
+            }
+
+            await User.findOneAndUpdate({ _id: _id },{
+                $inc: { coins: -2 }
+            })
+
+            if (postData) {
+                return res.status(200).json({
+                    code: statusCode.OK,
+                    message: statusMessage.OK,
+                    data: {
+                        disappointed: disappointFeel? disappointFeel.toString() : "0",
+                        kudos: kudoFeel? kudoFeel.toString() : "0",
+                    },
+                });
+            } else {
+                return res.status(404).json({
+                    code: statusCode.POST_IS_NOT_EXISTED,
+                    message: statusMessage.POST_IS_NOT_EXISTED,
+                });
+            }
         }
 
         let updateFields = {};
@@ -703,11 +784,13 @@ const feel = async (req, res) => {
                 $inc: { disappointed: 1 },
                 $push: { disappointed_list: _id },
             };
+            var disappointFeel = postDataPre.disappointed_list.length + 1;
         } else if (type == 1) {
             updateFields = {
                 $inc: { kudos: 1 },
                 $push: { kudos_list: _id },
             };
+            var kudoFeel = postDataPre.kudos_list.length + 1;
         }
 
         const postData = await Post.findOneAndUpdate({ _id: id }, updateFields);
@@ -717,14 +800,14 @@ const feel = async (req, res) => {
                 code: statusCode.OK,
                 message: statusMessage.OK,
                 data: {
-                    disappointed: postDataPre.disappointed_list.length.toString(),
-                    kudos: postDataPre.kudos_list.length.toString(),
+                    disappointed: disappointFeel? disappointFeel.toString() : "0",
+                    kudos: kudoFeel? kudoFeel.toString() : "0",
                 },
             });
         } else {
             return res.status(404).json({
-                code: statusCode.NOT_FOUND,
-                message: statusMessage.NOT_FOUND,
+                code: statusCode.POST_IS_NOT_EXISTED,
+                message: statusMessage.POST_IS_NOT_EXISTED,
             });
         }
     } catch (error) {
