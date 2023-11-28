@@ -1,6 +1,5 @@
 const express = require('express');
 const controller = require('../controllers/social.controller.js');
-const { isValidate } = require('../middlewares/validated.middleware.js');
 const { isAuth } = require('../middlewares/auth.middleware.js');
 const router = express.Router();
 
@@ -17,6 +16,6 @@ router.post(
 );
 router.post('/get_user_friends', isAuth, controller.getListOfUserFriends);
 router.post('/set_accept_friend', isAuth, controller.processFriendRequest);
-router.post('/get_list_blocks', isAuth, controller.getListOfBlockedUsers);
+router.post('/get_list_blocks', isAuth,controller.getListOfBlockedUsers);
 
 module.exports = router;
