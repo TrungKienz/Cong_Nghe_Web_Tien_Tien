@@ -119,8 +119,8 @@ const addFriend = async (req, res) => {
         if (!targetData) {
             //For some reason cannot find target
             throw {
-                code: statusCode.NO_DATA_OR_END_OF_LIST_DATA,
-                message: statusMessage.NO_DATA_OR_END_OF_LIST_DATA,
+                code: statusCode.PARAMETER_VALUE_IS_INVALID,
+                message: statusMessage.PARAMETER_VALUE_IS_INVALID,
             };
         }
 
