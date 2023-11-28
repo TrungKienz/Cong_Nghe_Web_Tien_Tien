@@ -625,6 +625,7 @@ const deletePost = async (req, res) => {
 
 const reportPost = async (req, res) => {
     const { id, subject, details } = req.query;
+    const { _id } = req.userDataPass;
     try {
         if (!id || !subject || !details) {
             return res.status(200).json({
@@ -632,11 +633,23 @@ const reportPost = async (req, res) => {
                 message: statusMessage.PARAMETER_IS_NOT_ENOUGHT,
             });
         }
-        var result = await Post.findOne({ _id: id });
-        if (!result) {
-            throw Error('notfound');
-        } else if (result.is_blocked) {
-            throw Error('blocked');
+
+        var postData = await Post.findOne({ _id: id }).populate({
+            path: 'author',
+            select: '_id blockedIds'
+        });
+
+        if (!postData || postData.author.blockedIds.includes(_id) || req.userDataPass.blockedIds.includes(postData.author._id)) {
+            return res.status(200).json({
+                code: statusCode.POST_IS_NOT_EXISTED,
+                message: statusMessage.POST_IS_NOT_EXISTED,
+            });
+        } else if (postData.is_blocked) {
+            return res.status(200).json({
+                code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+                message:
+                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
+            });
         }
         await new ReportPost({
             id: id,
@@ -648,23 +661,10 @@ const reportPost = async (req, res) => {
             message: statusMessage.OK,
         });
     } catch (error) {
-        if (error.message == 'notfound') {
-            return res.status(200).json({
-                code: statusCode.POST_IS_NOT_EXISTED,
-                message: statusMessage.POST_IS_NOT_EXISTED,
-            });
-        } else if (error.message == 'blocked') {
-            return res.status(200).json({
-                code: statusCode.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-                message:
-                    statusMessage.ACTION_HAS_BEEN_DONE_PREVIOUSLY_BY_THIS_USER,
-            });
-        } else {
-            return res.status(200).json({
-                code: statusCode.UNKNOWN_ERROR,
-                message: statusMessage.UNKNOWN_ERROR,
-            });
-        }
+        return res.status(200).json({
+            code: statusCode.UNKNOWN_ERROR,
+            message: statusMessage.UNKNOWN_ERROR,
+        });
     }
 };
 
