@@ -270,7 +270,7 @@ const getListConversation = async (req, res) => {
             code: statusCode.OK,
             message: statusMessage.OK,
             data: dataRes,
-            numNewMessage: numNewMessage,
+            numNewMessage: numNewMessage.toString(),
         });
     } catch (error) {
         console.error(error);
