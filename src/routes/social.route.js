@@ -1,5 +1,6 @@
 const express = require('express');
 const controller = require('../controllers/social.controller.js');
+const { isValidate } = require('../middlewares/validated.middleware.js');
 const { isAuth } = require('../middlewares/auth.middleware.js');
 const router = express.Router();
 
