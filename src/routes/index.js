@@ -22,7 +22,6 @@ const cpUpload = upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'cover_image[]', maxCount: 1 },
 ]);
-
 const routesArray = [
     { path: '/auth', router: authRouter },
     { path: '/user', router: userRouter },
@@ -41,7 +40,6 @@ function routes(app) {
     app.use(cpUpload);
     app.use(bodyParser.json({ limit: '50mb' })); // for parsing application/json
     app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); // for parsing application/x-www-form-urlencoded
-
     routesArray.forEach((route) => {
         app.use('/it4788' + route.path, route.router);
     });

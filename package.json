@@ -29,6 +29,8 @@
         "mongoose": "^5.10.14",
         "multer": "^1.4.4",
         "socket.io": "^4.5.4",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.0",
         "video-thumbnail-generator": "^1.0.8"
     },
     "devDependencies": {
