@@ -367,8 +367,8 @@ const editPost = async (req, res) => {
     const { id, described, status, state, image_del, image_sort, auto_accept } =
         req.query;
     const { _id } = req.userDataPass;
-    const images = req.files && req.files['image'];
-    const video = req.files && req.files['video'];
+    const images = req.files['image'];
+    const video = req.files['video'];
 
     try {
         var countImageDel = 0;
@@ -400,12 +400,12 @@ const editPost = async (req, res) => {
                 message: statusMessage.MAXIMUM_NUMBER_OF_IMAGES, 
             })
         }
-        if (image_del != null && postData.image.length == 0) {
-            return res.status(200).json({
-                code: statusCode.PARAMETER_VALUE_IS_INVALID,
-                message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
-            })
-        }
+        // if (image_del != null && postData.image.length == 0) {
+        //     return res.status(200).json({
+        //         code: statusCode.PARAMETER_VALUE_IS_INVALID,
+        //         message: statusMessage.PARAMETER_VALUE_IS_INVALID, 
+        //     })
+        // }
 
         // Kiểm tra bài post có video hay ảnh
         // if (postData.image.length != 0 && video != null) {
